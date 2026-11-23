@@ -40,7 +40,19 @@ ledger is saved in `/data/virtual-battery.json`.
 | Dashboard widgets | `virtual_battery`, `energy_balance`                                  | [`src/widgets.js`](src/widgets.js) |
 | Languages         | English, French, German, Spanish (manifest, messages, widgets, docs) | [`src/i18n.js`](src/i18n.js)       |
 
-Requires **Gladys ≥ 5.1.0** (scene and widget capability fields).
+Requires **Gladys ≥ 5.2.0** (energy contract template).
+
+## Tariffs: the Urban Solar energy contract
+
+The prices are not in the integration's configuration. The manifest declares
+an `energy_contracts` template, **Urban Solar — virtual battery**
+(`urban-solar-virtual-battery`, `delegated` pricing): the user creates the
+contract once in the Gladys wizard (grid price, withdrawal fee, monthly
+subscriptions). The integration reads it with `getEnergyContracts()` (picking
+the contract in force at each date) to compute the savings, and answers
+`onEnergyPrice` / `onEnergyCurrent`: each half-hour of the linked meter is
+priced with the share the virtual battery covered, recorded by the ledger
+(per half-hour with the Shelly, per day with the Linky readings).
 
 ## Project structure
 
@@ -54,6 +66,8 @@ src/devices/                      discovery payloads of the two devices
 src/actions.js                    Configuration screen actions
 src/scenes.js                     scene actions
 src/widgets.js                    dashboard widgets
+src/tariffs.js                    prices read from the Urban Solar energy contract
+src/pricing.js                    delegated pricing of that contract (onEnergyPrice / onEnergyCurrent)
 src/i18n.js                       user-facing messages, 4 languages
 src/config.js                     defaults (mirror the manifest) + normalization
 src/store.js                      ledger persistence under /data

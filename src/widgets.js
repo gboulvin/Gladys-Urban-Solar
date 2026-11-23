@@ -72,6 +72,27 @@ function sourceRow(transport) {
   };
 }
 
+// The prices of the Urban Solar contract in force: withdrawal fee / grid.
+function tariffRow(rates) {
+  if (!rates) {
+    return {
+      label: t('w_tariff'),
+      icon: 'file-text',
+      value: t('w_tariff_missing'),
+      color: WIDGET_COLORS.WARNING,
+    };
+  }
+  return {
+    label: t('w_tariff'),
+    icon: 'file-text',
+    value: t('w_tariff_value', {
+      fee: rates.discharge_fee.toFixed(4),
+      grid: rates.grid_price.toFixed(4),
+    }),
+    color: WIDGET_COLORS.NEUTRAL,
+  };
+}
+
 /** `2026-11-23 14:05` in the user's time zone: readable in every language. */
 function formatDateTime(iso, timeZone) {
   if (!iso) return t('w_never');
@@ -162,6 +183,7 @@ export const WIDGETS = {
                 value: euros(status.savingsEur),
                 color: WIDGET_COLORS.SUCCESS,
               },
+              tariffRow(status.rates),
               {
                 label: t('w_last_update'),
                 icon: 'clock',

@@ -24,8 +24,11 @@ import {
   createInitialState,
   emptyDay,
   levelPercent,
+  pruneCoverage,
+  recordCoverage,
   restoreState,
   round,
+  slotKeyOf,
 } from './battery.js';
 import { sourceOrder } from './config.js';
 import { addDays, daysBetween, localDay } from './dates.js';
@@ -37,8 +40,10 @@ import {
   gridFeatureId,
 } from './devices/index.js';
 import { t } from './i18n.js';
+import { currentPrice, priceIntervals } from './pricing.js';
 import { readDailyEnergy } from './sources/conso.js';
 import { readShelly } from './sources/shelly.js';
+import { createTariffs } from './tariffs.js';
 
 const logger = createLogger({ name: 'engine' });
 
@@ -76,9 +81,16 @@ const NOT_CONFIGURED = Object.freeze({
 
 /**
  * @param {{ gladys: any, store: ReturnType<import('./store.js').createStore>,
- *   fetchImpl?: typeof fetch, now?: () => Date }} options
+ *   fetchImpl?: typeof fetch, now?: () => Date,
+ *   tariffs?: ReturnType<typeof createTariffs> }} options
  */
-export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new Date() }) {
+export function createEngine({
+  gladys,
+  store,
+  fetchImpl = fetch,
+  now = () => new Date(),
+  tariffs = createTariffs({ gladys, now }),
+}) {
   let state = createInitialState();
   let running = null;
   let lastRefreshAt = null;
@@ -175,9 +187,16 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
         const moved = applyInterval(
           state,
           { importKwh: importWh / 1000, exportKwh: exportWh / 1000 },
-          config,
+          tariffs.ratesFor(today),
         );
         addToDay(state.today, moved);
+        if (state.accounting) {
+          // The energy flowed since the previous read: date it half a
+          // minute back, so a read just after a slot boundary still fills
+          // the slot it belongs to.
+          const slotKey = slotKeyOf(new Date(now().getTime() - 30000));
+          recordCoverage(state, { slotKey, dayKey: today }, moved);
+        }
         state.local.lastDay = today;
       } else {
         // A replaced or reset meter: its counters went backwards.
@@ -219,8 +238,11 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
         const moved = applyInterval(
           state,
           { importKwh: day.importWh / 1000, exportKwh: day.exportWh / 1000 },
-          config,
+          tariffs.ratesFor(day.date),
         );
+        if (state.accounting) {
+          recordCoverage(state, { dayKey: day.date }, moved);
+        }
         closeDay({ date: day.date, ...moved });
         updateBatteryState({ importing: day.importWh, exporting: day.exportWh });
         state.cloud.lastDay = day.date;
@@ -300,6 +322,7 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
 
   async function doRefresh(config, { force }) {
     const previousStock = state.stockKwh;
+    await tariffs.refresh();
     const order = sourceOrder(config);
     if (order.length === 0) {
       transport = NOT_CONFIGURED;
@@ -330,6 +353,7 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
           };
           lastError = null;
           state.lastUpdate = now().toISOString();
+          state.startedAt ??= state.lastUpdate;
           break;
         } catch (err) {
           logger.warn(`The ${source} source failed: ${err.message}`);
@@ -346,6 +370,7 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
       }
     }
     checkLowStock(previousStock, config);
+    pruneCoverage(state, now().getTime());
     await persist();
     await publishStates(config);
     await publishTransports();
@@ -411,6 +436,26 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
       await reportConnection({ force: true });
     },
 
+    /** Price the intervals of an energy-contract.price request (see pricing.js). */
+    price(request, config) {
+      tariffs.remember(request.contract);
+      return priceIntervals(state, request, {
+        timeZone: request.contract.timezone || config.timezone,
+        nowMs: now().getTime(),
+      });
+    },
+
+    /** The price of a kWh drawn now (energy-contract.current). */
+    currentPrice(request) {
+      tariffs.remember(request.contract);
+      return currentPrice(state, request);
+    },
+
+    /** Re-read the Urban Solar contracts now. */
+    refreshTariffs() {
+      return tariffs.refresh({ force: true });
+    },
+
     status(config) {
       const today = state.activeSource === SOURCES.LOCAL ? state.today : null;
       return {
@@ -433,6 +478,7 @@ export function createEngine({ gladys, store, fetchImpl = fetch, now = () => new
         live: { ...live },
         transport: { ...transport },
         lastUpdate: state.lastUpdate,
+        rates: tariffs.ratesFor(localDay(now(), config.timezone)),
       };
     },
   };

@@ -31,7 +31,7 @@ vuelve a contar desde las lecturas Linky.
 
 ## Requisitos
 
-- Gladys Assistant 5.1 o posterior.
+- Gladys Assistant 5.2 o posterior.
 - Para la fuente local: un medidor de energía Shelly (Gen2 o posterior) en
   la acometida, accesible desde el equipo de Gladys, **sin autenticación** en
   su API local. Asígnele una IP fija en su router.
@@ -45,8 +45,8 @@ vuelve a contar desde las lecturas Linky.
 1. Abra la pestaña **Configuración** de la integración.
 2. Indique la **dirección del Shelly** (y su modelo), el **número y el token
    del contador Linky**, o ambos.
-3. Revise los precios de su contrato: **precio de la red** y **tarifa de
-   retirada**. Se usan para calcular el ahorro.
+3. Cree su **contrato de energía** en Gladys (ver más abajo): los precios se
+   introducen allí, una sola vez, no en la integración.
 4. Si lo desea, ajuste la **capacidad de referencia** (el saldo mostrado como
    100 %), el **umbral de alerta** y el **intervalo de actualización**.
 5. Guarde y pulse **Probar las fuentes de datos**: la respuesta de cada
@@ -54,6 +54,22 @@ vuelve a contar desde las lecturas Linky.
 6. Pulse **Ajustar saldo** e introduzca el saldo que muestra su área de
    cliente Urban Solar.
 7. Añada los dos dispositivos desde la pestaña **Descubrimiento**.
+
+## Contrato de energía
+
+Los precios no forman parte de la configuración de la integración: vienen de
+su contrato de energía en Gladys. En el asistente de contratos de energía de Gladys, cree un contrato
+a partir de la plantilla **Urban Solar — batería virtual**, vincúlelo a su
+contador eléctrico e indique el **precio de la red**, la **tarifa de
+retirada** y las suscripciones mensuales de electricidad y de batería
+virtual.
+
+La integración lee estos precios para calcular el ahorro, y Gladys le pide
+valorar su consumo: cada media hora, la energía cubierta por la batería
+virtual se factura a la tarifa de retirada y el resto al precio de la red.
+Cuando cambie la tarifa, cierre el contrato y cree uno nuevo desde la fecha
+del cambio. Sin contrato Urban Solar, la batería se sigue, pero no se calcula
+ningún ahorro.
 
 ## Dispositivos
 

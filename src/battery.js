@@ -48,6 +48,16 @@ export function createInitialState() {
     local: { importWh: null, exportWh: null, lastDay: null },
     cloud: { lastDay: null, lastFetch: null },
     lastUpdate: null,
+    // When the ledger started counting: Gladys asks the integration to price
+    // the energy of the Urban Solar contract, and what came before is billed
+    // at the full grid price.
+    startedAt: null,
+    // Coverage history, `[withdrawn kWh, full-price kWh]` per half-hour slot
+    // (`slots`, local source, recent weeks) and per day (`days`, every
+    // source): which share of the imported energy the battery covered, the
+    // basis of the price of the Urban Solar contract.
+    slots: {},
+    days: {},
   };
 }
 
@@ -67,6 +77,8 @@ export function restoreState(saved) {
     today: { ...initial.today, ...saved.today },
     local: { ...initial.local, ...saved.local },
     cloud: { ...initial.cloud, ...saved.cloud },
+    slots: { ...saved.slots },
+    days: { ...saved.days },
     version: STATE_VERSION,
   };
 }
@@ -76,9 +88,11 @@ export function restoreState(saved) {
  * moved in the battery during the interval.
  * @param {ReturnType<typeof createInitialState>} state
  * @param {{ importKwh: number, exportKwh: number }} interval
- * @param {{ grid_price: number, discharge_fee: number }} config
+ * @param {{ grid_price: number, discharge_fee: number } | null} rates the
+ *   tariff of the Urban Solar contract in force, null when there is none (the
+ *   ledger runs, but no saving can be computed)
  */
-export function applyInterval(state, { importKwh, exportKwh }, config) {
+export function applyInterval(state, { importKwh, exportKwh }, rates) {
   const imported = Math.max(0, importKwh || 0);
   const exported = Math.max(0, exportKwh || 0);
   state.importKwh += imported;
@@ -97,8 +111,49 @@ export function applyInterval(state, { importKwh, exportKwh }, config) {
   state.chargedKwh += chargedKwh;
   state.dischargedKwh += dischargedKwh;
   state.uncoveredKwh += uncoveredKwh;
-  state.savingsEur += dischargedKwh * Math.max(0, config.grid_price - config.discharge_fee);
+  if (rates) {
+    state.savingsEur += dischargedKwh * Math.max(0, rates.grid_price - rates.discharge_fee);
+  }
   return { chargedKwh, dischargedKwh, uncoveredKwh };
+}
+
+/**
+ * Record which share of an import the battery covered, in the half-hour slot
+ * (`slotKey`, optional) and the day (`dayKey`) it happened in.
+ */
+export function recordCoverage(state, { slotKey = null, dayKey }, moved) {
+  const add = (bucket, key) => {
+    const entry = bucket[key] ?? [0, 0];
+    entry[0] = round(entry[0] + moved.dischargedKwh, 4);
+    entry[1] = round(entry[1] + moved.uncoveredKwh, 4);
+    bucket[key] = entry;
+  };
+  if (slotKey) add(state.slots, slotKey);
+  add(state.days, dayKey);
+}
+
+// Slots kept for the half-hour pricing (beyond, the day ratio is used) and
+// days kept at all: the ledger file stays small, and Gladys only recomputes
+// recent costs.
+export const SLOT_RETENTION_DAYS = 62;
+export const DAY_RETENTION_DAYS = 5 * 366;
+
+/** Drop the coverage history older than the retention windows. */
+export function pruneCoverage(state, nowMs) {
+  const slotLimit = new Date(nowMs - SLOT_RETENTION_DAYS * 86400000).toISOString();
+  for (const key of Object.keys(state.slots)) {
+    if (key < slotLimit) delete state.slots[key];
+  }
+  const dayLimit = new Date(nowMs - DAY_RETENTION_DAYS * 86400000).toISOString().slice(0, 10);
+  for (const key of Object.keys(state.days)) {
+    if (key < dayLimit) delete state.days[key];
+  }
+}
+
+/** Start (UTC ISO) of the half-hour slot containing `date`. */
+export function slotKeyOf(date) {
+  const ms = date.getTime();
+  return new Date(ms - (ms % 1800000)).toISOString();
 }
 
 /** Add an interval's movements to a day summary. */

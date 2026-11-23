@@ -169,6 +169,19 @@ export const MESSAGES = {
     de: 'Letzte Aktualisierung',
     es: 'Última actualización',
   },
+  w_tariff: { en: 'Tariff', fr: 'Tarif', de: 'Tarif', es: 'Tarifa' },
+  w_tariff_value: {
+    en: '{fee} € / {grid} € per kWh',
+    fr: '{fee} € / {grid} € le kWh',
+    de: '{fee} € / {grid} € je kWh',
+    es: '{fee} € / {grid} € por kWh',
+  },
+  w_tariff_missing: {
+    en: 'No Urban Solar contract',
+    fr: 'Aucun contrat Urban Solar',
+    de: 'Kein Urban-Solar-Vertrag',
+    es: 'Sin contrato Urban Solar',
+  },
   w_never: { en: 'Never', fr: 'Jamais', de: 'Nie', es: 'Nunca' },
   w_accounting: {
     en: 'Accounting',

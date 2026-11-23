@@ -14,8 +14,8 @@ test('normalizeConfig returns the defaults when called with no argument', () => 
 });
 
 test('normalizeConfig coerces numeric strings and bounds them', () => {
-  const config = normalizeConfig({ grid_price: '0.25', poll_frequency: '10', capacity_kwh: 'x' });
-  assert.equal(config.grid_price, 0.25);
+  const config = normalizeConfig({ low_stock_kwh: '25', poll_frequency: '10', capacity_kwh: 'x' });
+  assert.equal(config.low_stock_kwh, 25);
   assert.equal(config.poll_frequency, 60, 'one minute minimum');
   assert.equal(config.capacity_kwh, DEFAULT_CONFIG.capacity_kwh, 'garbage falls back');
 });

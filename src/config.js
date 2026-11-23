@@ -23,10 +23,9 @@ export const DEFAULT_CONFIG = {
   // Cloud source: the Linky daily readings, through the free Conso API.
   prm: '',
   conso_token: '',
-  // Virtual battery.
+  // Virtual battery. The prices are NOT here: they come from the Urban Solar
+  // energy contract the user creates in Gladys (src/tariffs.js).
   capacity_kwh: 1000,
-  grid_price: 0.1952,
-  discharge_fee: 0.07,
   low_stock_kwh: 10,
   // Seconds between two reads of the local meter (the cloud readings are
   // daily: they are fetched every few hours whatever this value).
@@ -95,8 +94,6 @@ export function normalizeConfig(raw = {}) {
     prm: String(raw.prm ?? '').replace(/\D/g, ''),
     conso_token: typeof raw.conso_token === 'string' ? raw.conso_token.trim() : '',
     capacity_kwh: toNumber(raw.capacity_kwh, DEFAULT_CONFIG.capacity_kwh, { min: 1 }),
-    grid_price: toNumber(raw.grid_price, DEFAULT_CONFIG.grid_price, { min: 0 }),
-    discharge_fee: toNumber(raw.discharge_fee, DEFAULT_CONFIG.discharge_fee, { min: 0 }),
     low_stock_kwh: toNumber(raw.low_stock_kwh, DEFAULT_CONFIG.low_stock_kwh, { min: 0 }),
     poll_frequency: toNumber(raw.poll_frequency, DEFAULT_CONFIG.poll_frequency, {
       min: 60,

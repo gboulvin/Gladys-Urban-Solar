@@ -227,3 +227,18 @@ test('the scene and widget keys respect the store patterns', () => {
     }
   }
 });
+
+test('declaring energy contracts requires Gladys >= 5.2.0', () => {
+  assert.ok(manifest.energy_contracts, 'the integration declares its contract template');
+  assert.ok(
+    isAtLeast(minGladysVersion(), [5, 2, 0]),
+    `energy_contracts requires gladys_version >= 5.2.0, got "${manifest.gladys_version}"`,
+  );
+});
+
+test('the prices live in the energy contract, not in the configuration', () => {
+  const keys = keysOf(manifest.config_schema);
+  for (const key of ['grid_price', 'discharge_fee']) {
+    assert.ok(!keys.includes(key), `"${key}" belongs to the Urban Solar contract`);
+  }
+});

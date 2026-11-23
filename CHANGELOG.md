@@ -10,6 +10,27 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- An "Urban Solar — virtual battery" energy contract template: the prices are
+  entered once, in the Gladys contract wizard (grid price, withdrawal fee,
+  monthly subscriptions), and the contract in force at each date is used.
+- Gladys prices the consumption of the meter linked to the contract through
+  the integration: each half-hour, the energy the virtual battery covered at
+  the withdrawal fee, the rest at the grid price. The current price follows
+  the stock (withdrawal fee while the battery holds energy).
+- The "Virtual battery" widget shows the tariff in force.
+
+### Changed
+
+- Gladys 5.2.0 or later is required (energy contracts).
+
+### Removed
+
+- The "Grid price" and "Withdrawal fee" configuration fields: the prices now
+  come from the Urban Solar energy contract. Without one, the battery is still
+  tracked but no saving is computed.
+
 ## [1.0.0] - 2026-11-23
 
 ### Added

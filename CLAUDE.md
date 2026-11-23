@@ -46,6 +46,8 @@ src/devices/*.js       discovery payloads: virtual battery + grid connection
 src/actions.js         manifest `actions` handlers
 src/scenes.js          manifest `scene_actions` handlers
 src/widgets.js         manifest `widgets` handlers
+src/tariffs.js         prices from the user's Urban Solar energy contract (getEnergyContracts)
+src/pricing.js         delegated pricing of that contract (onEnergyPrice / onEnergyCurrent)
 src/i18n.js            every user-facing message, en/fr/de/es
 src/config.js          DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
 src/store.js           ledger persistence (/data/virtual-battery.json, atomic writes)
@@ -59,6 +61,12 @@ test/helpers.js        fake network (Shelly + Conso), memory store, clock
   cloud source on whole days strictly after `state.local.lastDay` and
   `state.cloud.lastDay`. Changing that logic needs a test in
   `test/engine.test.js`. Keep `restoreState` able to read older ledgers.
+- **Prices live in the energy contract.** Never add a price to `config_schema`:
+  they are inputs of the `urban-solar-virtual-battery` template, read with
+  `getEnergyContracts()`, picked by date. The pricing answer must stay
+  deterministic: it only reads the recorded coverage history
+  (`state.slots`, `state.days`), never the current stock. The template key
+  and its input keys are stored by the users' contracts: never rename them.
 - **External ids are forever.** Built with `gladys.externalIds(type, 'urban-solar')`;
   never rename a device type, a feature key, a manifest `config_schema`,
   `actions`, `scene_triggers`, `scene_actions` or `widgets` key.
@@ -83,6 +91,6 @@ test/helpers.js        fake network (Shelly + Conso), memory store, clock
   in `CHANGELOG.md`. Never write a version heading: the Release workflow does.
 - **Manifest.** Texts are multi-language objects, the catalog `description`
   holds 10 to 100 characters per language, widget labels 3 to 30.
-  `gladys_version` stays `>=5.1.0` (capability fields).
+  `gladys_version` stays `>=5.2.0` (`energy_contracts`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.

@@ -10,7 +10,13 @@ import {
   refreshWidgets,
 } from '../src/widgets.js';
 import { LANGUAGES } from '../src/i18n.js';
-import { BOTH_CONFIG, CLOUD_CONFIG, LOCAL_CONFIG, createTestEngine } from './helpers.js';
+import {
+  BOTH_CONFIG,
+  CLOUD_CONFIG,
+  LOCAL_CONFIG,
+  createTestEngine,
+  urbanSolarContract,
+} from './helpers.js';
 
 const getContent = (key, gladys, engine, config, settings = {}) =>
   WIDGETS[key].get(gladys, { settings, language: 'fr', units: 'metric', config, engine });
@@ -111,4 +117,20 @@ test('refreshWidgets nudges every widget', () => {
   const fresh = createFakeGladys();
   refreshWidgets(fresh);
   assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+});
+
+test('the virtual battery widget shows the tariff of the Urban Solar contract', async () => {
+  const withContract = await createTestEngine({ energyContracts: [urbanSolarContract()] });
+  await withContract.engine.refresh(LOCAL_CONFIG);
+  const without = await createTestEngine();
+  for (const [{ gladys, engine }, expected] of [
+    [withContract, /0\.0500 € \/ 0\.2000 €/],
+    [without, /Urban Solar/],
+  ]) {
+    const content = await getContent(VIRTUAL_BATTERY_WIDGET, gladys, engine, LOCAL_CONFIG);
+    assert.deepEqual(validateWidgetContent(content), []);
+    const status = content.components.find((c) => c.type === 'status');
+    const tariff = status.items.find((item) => item.label.en === 'Tariff');
+    assert.match(tariff.value.fr, expected);
+  }
 });

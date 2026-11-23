@@ -113,6 +113,13 @@ for (const [key, widget] of Object.entries(WIDGETS)) {
   );
 }
 
+// --- Energy contract: delegated pricing of the Urban Solar contract ---------
+// The user's "Urban Solar — virtual battery" contract (manifest
+// `energy_contracts`) carries the prices; Gladys asks the integration to
+// price the energy of the meter linked to it (see src/pricing.js).
+gladys.onEnergyPrice((request) => engine.price(request, config));
+gladys.onEnergyCurrent((request) => engine.currentPrice(request));
+
 // --- Configuration updated by the user ---------------------------------------
 gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
@@ -126,6 +133,7 @@ gladys.on('connected', async () => {
   try {
     config = normalizeConfig(await gladys.getConfig());
     await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+    await engine.refreshTariffs();
     await engine.publishAll(config);
     ready = true;
     await tick({ force: true });

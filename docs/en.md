@@ -31,7 +31,7 @@ readings.
 
 ## Prerequisites
 
-- Gladys Assistant 5.1 or later.
+- Gladys Assistant 5.2 or later.
 - For the local source: a Shelly energy meter (Gen2 or later) on the grid
   connection, reachable from the Gladys host, **without authentication**
   on its local API. Give it a fixed IP address in your router.
@@ -45,9 +45,8 @@ readings.
 1. Open the **Configuration** tab of the integration.
 2. Fill in the **Shelly address** (and its model), the **Linky meter number
    and token**, or both.
-3. Check the prices of your contract: **grid price** (price of a kWh bought
-   from the grid) and **withdrawal fee** (what a kWh taken from the virtual
-   battery still costs). They are used to compute your savings.
+3. Create your **energy contract** in Gladys (see below): the prices are
+   entered there, once, not in the integration.
 4. Optionally set the **reference capacity** (the stock displayed as 100 %),
    the **low stock alert** threshold and the **refresh interval**.
 5. Save, then click **Test the data sources**: the answer of each source is
@@ -55,6 +54,27 @@ readings.
 6. Click **Set the stock** and enter the stock displayed in your Urban Solar
    customer area: the integration starts counting from there.
 7. Add the two devices from the **Discovery** tab.
+
+## Energy contract
+
+The prices are not part of the integration's configuration: they come from
+your energy contract in Gladys. In the energy contract wizard of Gladys, create a contract
+from the **Urban Solar — virtual battery** template, link it to your
+electricity meter and fill in:
+
+- **Grid price**: the price of a kWh bought from the grid once the virtual
+  battery is empty;
+- **Withdrawal fee**: what a kWh taken from the virtual battery still costs;
+- the monthly **electricity subscription** and **virtual battery
+  subscription**.
+
+The integration reads these prices to compute your savings, and Gladys asks
+it to price your consumption: each half-hour, the energy the virtual battery
+covered is billed at the withdrawal fee and the rest at the grid price, so
+the Gladys energy dashboard shows what Urban Solar actually bills. When the
+tariff changes, close the contract and create a new one from the change date:
+the past keeps its old prices. Without an Urban Solar contract, the battery
+is still tracked, but no saving is computed.
 
 ## Devices
 

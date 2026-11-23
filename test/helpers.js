@@ -92,11 +92,30 @@ export function createClock(iso = '2026-06-15T10:00:00Z') {
   return clock;
 }
 
+/** An "Urban Solar — virtual battery" contract, as getEnergyContracts() returns it. */
+export function urbanSolarContract(overrides = {}) {
+  return {
+    id: 'contract-1',
+    template_key: 'urban-solar-virtual-battery',
+    template_version: '2026-11-23',
+    pricing_mode: 'delegated',
+    inputs: { grid_price: 0.2, discharge_fee: 0.05, subscription_monthly: 15, battery_monthly: 3 },
+    valid_from: '2026-01-01',
+    valid_to: null,
+    timezone: 'Europe/Paris',
+    currency: 'EUR',
+    billing_period_start_day: 1,
+    status: 'active',
+    ...overrides,
+  };
+}
+
 export async function createTestEngine({
   store = createMemoryStore(),
   clock = createClock(),
+  energyContracts = [],
 } = {}) {
-  const gladys = createFakeGladys();
+  const gladys = createFakeGladys({ energyContracts });
   const network = createNetwork();
   const engine = createEngine({ gladys, store, fetchImpl: network.fetch, now: clock.now });
   await engine.init();

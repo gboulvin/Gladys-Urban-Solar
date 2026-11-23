@@ -34,7 +34,7 @@ jamais recomptée à partir des relevés Linky.
 
 ## Prérequis
 
-- Gladys Assistant 5.1 ou plus récent.
+- Gladys Assistant 5.2 ou plus récent.
 - Pour la source locale : un compteur d'énergie Shelly (Gen2 ou plus récent)
   sur l'arrivée du réseau, joignable depuis la machine Gladys, **sans
   authentification** sur son API locale. Donnez-lui une adresse IP fixe dans
@@ -50,10 +50,8 @@ jamais recomptée à partir des relevés Linky.
 1. Ouvrez l'onglet **Configuration** de l'intégration.
 2. Renseignez l'**adresse du Shelly** (et son modèle), le **numéro et le
    jeton du compteur Linky**, ou les deux.
-3. Vérifiez les tarifs de votre contrat : **prix du kWh réseau** (prix d'un
-   kWh acheté au réseau) et **frais de déstockage** (ce que coûte encore un
-   kWh puisé dans la batterie virtuelle). Ils servent au calcul de vos
-   économies.
+3. Créez votre **contrat d'énergie** dans Gladys (voir ci-dessous) : les
+   tarifs se saisissent là, une seule fois, pas dans l'intégration.
 4. Réglez si besoin la **capacité de référence** (le stock affiché à 100 %),
    le seuil d'**alerte de stock bas** et l'**intervalle de rafraîchissement**.
 5. Enregistrez, puis cliquez sur **Tester les sources de données** : la
@@ -61,6 +59,28 @@ jamais recomptée à partir des relevés Linky.
 6. Cliquez sur **Régler le stock** et saisissez le stock affiché dans votre
    espace client Urban Solar : l'intégration compte à partir de là.
 7. Ajoutez les deux appareils depuis l'onglet **Découverte**.
+
+## Contrat d'énergie
+
+Les tarifs ne font pas partie de la configuration de l'intégration : ils
+viennent de votre contrat d'énergie dans Gladys. Dans l'assistant des contrats d'énergie de Gladys, créez un contrat à partir du modèle **Urban Solar — batterie
+virtuelle**, rattachez-le à votre compteur électrique et renseignez :
+
+- le **prix du kWh réseau** : le prix d'un kWh acheté au réseau une fois la
+  batterie virtuelle vide ;
+- les **frais de déstockage** : ce que coûte encore un kWh puisé dans la
+  batterie virtuelle ;
+- l'**abonnement électricité** et l'**abonnement batterie virtuelle**
+  mensuels.
+
+L'intégration lit ces tarifs pour calculer vos économies, et Gladys lui
+demande de chiffrer votre consommation : chaque demi-heure, l'énergie couverte
+par la batterie virtuelle est facturée aux frais de déstockage et le reste au
+prix du réseau, si bien que le tableau de bord énergie de Gladys affiche ce
+qu'Urban Solar facture réellement. Quand le tarif change, clôturez le contrat
+et créez-en un nouveau à la date du changement : le passé garde ses anciens
+prix. Sans contrat Urban Solar, la batterie est toujours suivie, mais aucune
+économie n'est calculée.
 
 ## Appareils
 

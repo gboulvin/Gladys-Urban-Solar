@@ -10,7 +10,7 @@
   },
   "version": "1.0.0",
   "docker_image": "ghcr.io/gboulvin/gladys-urban-solar:1.0.0",
-  "gladys_version": ">=5.1.0",
+  "gladys_version": ">=5.2.0",
   "cover_image": "https://raw.githubusercontent.com/gboulvin/Gladys-Urban-Solar/main/cover.png",
   "categories": ["energy"],
   "keywords": [
@@ -201,10 +201,10 @@
         "es": "Batería virtual"
       },
       "description": {
-        "en": "Prices of your contract and alert threshold. After the installation, set the current stock with the \"Set the stock\" action, using the value of your Urban Solar customer area.",
-        "fr": "Tarifs de votre contrat et seuil d'alerte. Après l'installation, réglez le stock actuel avec l'action « Régler le stock », d'après la valeur de votre espace client Urban Solar.",
-        "de": "Preise Ihres Vertrags und Warnschwelle. Setzen Sie nach der Installation den aktuellen Bestand mit der Aktion „Bestand setzen“, laut Ihrem Urban-Solar-Kundenbereich.",
-        "es": "Precios de su contrato y umbral de alerta. Tras la instalación, ajuste el saldo actual con la acción «Ajustar saldo», según el valor de su área de cliente Urban Solar."
+        "en": "The prices come from your energy contract: create an \"Urban Solar — virtual battery\" contract in the Gladys energy contracts and link it to your meter. Then set the current stock with the \"Set the stock\" action, using the value of your Urban Solar customer area.",
+        "fr": "Les tarifs viennent de votre contrat d'énergie : créez un contrat « Urban Solar — batterie virtuelle » dans les contrats d'énergie de Gladys et rattachez-le à votre compteur. Réglez ensuite le stock actuel avec l'action « Régler le stock », d'après la valeur de votre espace client Urban Solar.",
+        "de": "Die Preise stammen aus Ihrem Energievertrag: Legen Sie in den Energieverträgen von Gladys einen Vertrag „Urban Solar — virtuelle Batterie“ an und verknüpfen Sie ihn mit Ihrem Zähler. Setzen Sie dann den aktuellen Bestand mit der Aktion „Bestand setzen“, laut Ihrem Urban-Solar-Kundenbereich.",
+        "es": "Los precios vienen de su contrato de energía: cree un contrato «Urban Solar — batería virtual» en los contratos de energía de Gladys y vincúlelo a su contador. Después ajuste el saldo actual con la acción «Ajustar saldo», según el valor de su área de cliente Urban Solar."
       }
     },
     {
@@ -226,46 +226,6 @@
       "default": 1000,
       "min": 1,
       "max": 1000000
-    },
-    {
-      "key": "grid_price",
-      "type": "number",
-      "label": {
-        "en": "Grid price (€/kWh)",
-        "fr": "Prix du kWh réseau (€/kWh)",
-        "de": "Netzpreis (€/kWh)",
-        "es": "Precio de la red (€/kWh)"
-      },
-      "description": {
-        "en": "Price of a kWh bought from the grid, taxes included.",
-        "fr": "Prix d'un kWh acheté au réseau, toutes taxes comprises.",
-        "de": "Preis einer aus dem Netz bezogenen kWh, inklusive Steuern.",
-        "es": "Precio de un kWh comprado a la red, impuestos incluidos."
-      },
-      "required": false,
-      "default": 0.1952,
-      "min": 0,
-      "max": 5
-    },
-    {
-      "key": "discharge_fee",
-      "type": "number",
-      "label": {
-        "en": "Withdrawal fee (€/kWh)",
-        "fr": "Frais de déstockage (€/kWh)",
-        "de": "Entnahmegebühr (€/kWh)",
-        "es": "Tarifa de retirada (€/kWh)"
-      },
-      "description": {
-        "en": "What a kWh taken from the virtual battery still costs (transport, taxes): check your contract.",
-        "fr": "Ce que coûte encore un kWh puisé dans la batterie virtuelle (acheminement, taxes) : voir votre contrat.",
-        "de": "Was eine aus der virtuellen Batterie entnommene kWh noch kostet (Netz, Steuern): siehe Ihr Vertrag.",
-        "es": "Lo que aún cuesta un kWh retirado de la batería virtual (transporte, impuestos): vea su contrato."
-      },
-      "required": false,
-      "default": 0.07,
-      "min": 0,
-      "max": 5
     },
     {
       "key": "low_stock_kwh",
@@ -403,7 +363,12 @@
           "options": [
             {
               "value": "charging",
-              "label": { "en": "Charging", "fr": "En charge", "de": "Lädt", "es": "Cargando" }
+              "label": {
+                "en": "Charging",
+                "fr": "En charge",
+                "de": "Lädt",
+                "es": "Cargando"
+              }
             },
             {
               "value": "discharging",
@@ -416,11 +381,21 @@
             },
             {
               "value": "empty",
-              "label": { "en": "Empty", "fr": "Vide", "de": "Leer", "es": "Vacía" }
+              "label": {
+                "en": "Empty",
+                "fr": "Vide",
+                "de": "Leer",
+                "es": "Vacía"
+              }
             },
             {
               "value": "idle",
-              "label": { "en": "Idle", "fr": "Au repos", "de": "Ruhezustand", "es": "En reposo" }
+              "label": {
+                "en": "Idle",
+                "fr": "Au repos",
+                "de": "Ruhezustand",
+                "es": "En reposo"
+              }
             }
           ]
         }
@@ -429,7 +404,12 @@
         {
           "key": "state",
           "type": "string",
-          "label": { "en": "State", "fr": "État", "de": "Zustand", "es": "Estado" }
+          "label": {
+            "en": "State",
+            "fr": "État",
+            "de": "Zustand",
+            "es": "Estado"
+          }
         },
         {
           "key": "stock_kwh",
@@ -498,7 +478,12 @@
         {
           "key": "date",
           "type": "string",
-          "label": { "en": "Day", "fr": "Jour", "de": "Tag", "es": "Día" }
+          "label": {
+            "en": "Day",
+            "fr": "Jour",
+            "de": "Tag",
+            "es": "Día"
+          }
         },
         {
           "key": "charged_kwh",
@@ -593,7 +578,12 @@
         {
           "key": "state",
           "type": "string",
-          "label": { "en": "State", "fr": "État", "de": "Zustand", "es": "Estado" }
+          "label": {
+            "en": "State",
+            "fr": "État",
+            "de": "Zustand",
+            "es": "Estado"
+          }
         },
         {
           "key": "accounting",
@@ -686,7 +676,12 @@
         {
           "key": "success",
           "type": "boolean",
-          "label": { "en": "Success", "fr": "Succès", "de": "Erfolg", "es": "Éxito" }
+          "label": {
+            "en": "Success",
+            "fr": "Succès",
+            "de": "Erfolg",
+            "es": "Éxito"
+          }
         },
         {
           "key": "stock_kwh",
@@ -881,5 +876,126 @@
       "icon": "bar-chart-2",
       "action_timeout_seconds": 15
     }
-  ]
+  ],
+  "energy_contracts": {
+    "templates": [
+      {
+        "key": "urban-solar-virtual-battery",
+        "name": {
+          "en": "Urban Solar — virtual battery",
+          "fr": "Urban Solar — batterie virtuelle",
+          "de": "Urban Solar — virtuelle Batterie",
+          "es": "Urban Solar — batería virtual"
+        },
+        "description": {
+          "en": "Urban Solar offer with a virtual battery. The integration prices each half-hour: the energy the virtual battery covered at the withdrawal fee, the rest at the grid price. Requires the Urban Solar integration with a Shelly meter or the Linky readings.",
+          "fr": "Offre Urban Solar avec batterie virtuelle. L'intégration chiffre chaque demi-heure : l'énergie couverte par la batterie virtuelle aux frais de déstockage, le reste au prix du réseau. Nécessite l'intégration Urban Solar avec un compteur Shelly ou les relevés Linky.",
+          "de": "Urban-Solar-Angebot mit virtueller Batterie. Die Integration bepreist jede halbe Stunde: die von der virtuellen Batterie gedeckte Energie zur Entnahmegebühr, den Rest zum Netzpreis. Erfordert die Urban-Solar-Integration mit Shelly-Zähler oder Linky-Daten.",
+          "es": "Oferta Urban Solar con batería virtual. La integración valora cada media hora: la energía cubierta por la batería virtual a la tarifa de retirada, el resto al precio de la red. Requiere la integración Urban Solar con un medidor Shelly o las lecturas Linky."
+        },
+        "country": "FR",
+        "currency": "EUR",
+        "timezone": "Europe/Paris",
+        "pricing_mode": "delegated",
+        "version": "2026-11-23",
+        "inputs": [
+          {
+            "key": "grid_price",
+            "type": "number",
+            "unit": "EUR/kWh",
+            "required": true,
+            "default": 0.1952,
+            "label": {
+              "en": "Grid price",
+              "fr": "Prix du kWh réseau",
+              "de": "Netzpreis",
+              "es": "Precio de la red"
+            },
+            "description": {
+              "en": "Price of a kWh bought from the grid once the virtual battery is empty, taxes included.",
+              "fr": "Prix d'un kWh acheté au réseau une fois la batterie virtuelle vide, toutes taxes comprises.",
+              "de": "Preis einer aus dem Netz bezogenen kWh bei leerer virtueller Batterie, inklusive Steuern.",
+              "es": "Precio de un kWh comprado a la red con la batería virtual vacía, impuestos incluidos."
+            }
+          },
+          {
+            "key": "discharge_fee",
+            "type": "number",
+            "unit": "EUR/kWh",
+            "required": true,
+            "default": 0.07,
+            "label": {
+              "en": "Withdrawal fee",
+              "fr": "Frais de déstockage",
+              "de": "Entnahmegebühr",
+              "es": "Tarifa de retirada"
+            },
+            "description": {
+              "en": "What a kWh taken from the virtual battery still costs (grid transport, taxes): see your contract.",
+              "fr": "Ce que coûte encore un kWh puisé dans la batterie virtuelle (acheminement, taxes) : voir votre contrat.",
+              "de": "Was eine aus der virtuellen Batterie entnommene kWh noch kostet (Netzentgelt, Steuern): siehe Ihr Vertrag.",
+              "es": "Lo que aún cuesta un kWh retirado de la batería virtual (transporte, impuestos): vea su contrato."
+            }
+          },
+          {
+            "key": "subscription_monthly",
+            "type": "number",
+            "unit": "EUR/month",
+            "required": true,
+            "default": 0,
+            "label": {
+              "en": "Electricity subscription",
+              "fr": "Abonnement électricité",
+              "de": "Grundgebühr Strom",
+              "es": "Suscripción eléctrica"
+            },
+            "description": {
+              "en": "Monthly subscription of the electricity supply, taxes included.",
+              "fr": "Abonnement mensuel de la fourniture d'électricité, toutes taxes comprises.",
+              "de": "Monatliche Grundgebühr der Stromlieferung, inklusive Steuern.",
+              "es": "Suscripción mensual del suministro eléctrico, impuestos incluidos."
+            }
+          },
+          {
+            "key": "battery_monthly",
+            "type": "number",
+            "unit": "EUR/month",
+            "required": true,
+            "default": 0,
+            "label": {
+              "en": "Virtual battery subscription",
+              "fr": "Abonnement batterie virtuelle",
+              "de": "Grundgebühr virtuelle Batterie",
+              "es": "Suscripción batería virtual"
+            },
+            "description": {
+              "en": "Monthly fee of the virtual battery service, taxes included.",
+              "fr": "Montant mensuel du service de batterie virtuelle, toutes taxes comprises.",
+              "de": "Monatliche Gebühr des Dienstes der virtuellen Batterie, inklusive Steuern.",
+              "es": "Cuota mensual del servicio de batería virtual, impuestos incluidos."
+            }
+          }
+        ],
+        "tariff": {
+          "tariff_version": 1,
+          "components": [
+            {
+              "key": "subscription",
+              "kind": "fixed",
+              "label": "Subscription",
+              "amount": "{{input:subscription_monthly}}",
+              "per": "month"
+            },
+            {
+              "key": "virtual-battery",
+              "kind": "fixed",
+              "label": "Virtual battery",
+              "amount": "{{input:battery_monthly}}",
+              "per": "month"
+            }
+          ]
+        }
+      }
+    ]
+  }
 }

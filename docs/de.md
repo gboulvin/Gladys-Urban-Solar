@@ -33,7 +33,7 @@ Linky-Daten gezählt.
 
 ## Voraussetzungen
 
-- Gladys Assistant 5.1 oder neuer.
+- Gladys Assistant 5.2 oder neuer.
 - Für die lokale Quelle: ein Shelly-Energiezähler (Gen2 oder neuer) am
   Netzanschluss, vom Gladys-Host erreichbar, **ohne Authentifizierung** an
   seiner lokalen API. Vergeben Sie ihm eine feste IP-Adresse im Router.
@@ -47,8 +47,8 @@ Linky-Daten gezählt.
 1. Öffnen Sie den Reiter **Konfiguration** der Integration.
 2. Geben Sie die **Shelly-Adresse** (und das Modell), die **Linky-Nummer und
    das Token** oder beides ein.
-3. Prüfen Sie die Preise Ihres Vertrags: **Netzpreis** und
-   **Entnahmegebühr**. Sie dienen der Berechnung Ihrer Ersparnis.
+3. Legen Sie Ihren **Energievertrag** in Gladys an (siehe unten): Die Preise
+   werden dort einmal eingegeben, nicht in der Integration.
 4. Legen Sie bei Bedarf die **Referenzkapazität** (als 100 % angezeigter
    Bestand), die **Warnschwelle** und das **Aktualisierungsintervall** fest.
 5. Speichern Sie und klicken Sie auf **Datenquellen testen**: Die Antwort
@@ -56,6 +56,22 @@ Linky-Daten gezählt.
 6. Klicken Sie auf **Bestand setzen** und geben Sie den in Ihrem
    Urban-Solar-Kundenbereich angezeigten Bestand ein.
 7. Fügen Sie die beiden Geräte im Reiter **Erkennung** hinzu.
+
+## Energievertrag
+
+Die Preise gehören nicht zur Konfiguration der Integration: Sie stammen aus
+Ihrem Energievertrag in Gladys. Legen Sie im Energievertrags-Assistenten von Gladys
+einen Vertrag aus der Vorlage **Urban Solar — virtuelle Batterie** an,
+verknüpfen Sie ihn mit Ihrem Stromzähler und geben Sie den **Netzpreis**, die
+**Entnahmegebühr** sowie die monatlichen Grundgebühren für Strom und die
+virtuelle Batterie ein.
+
+Die Integration liest diese Preise zur Berechnung Ihrer Ersparnis, und Gladys
+lässt sie Ihren Verbrauch bepreisen: Jede halbe Stunde wird die von der
+virtuellen Batterie gedeckte Energie zur Entnahmegebühr und der Rest zum
+Netzpreis berechnet. Ändert sich der Tarif, schließen Sie den Vertrag und
+legen ab dem Änderungsdatum einen neuen an. Ohne Urban-Solar-Vertrag wird die
+Batterie weiter erfasst, aber keine Ersparnis berechnet.
 
 ## Geräte
 
