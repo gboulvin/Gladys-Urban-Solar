@@ -1,0 +1,268 @@
+// -----------------------------------------------------------------------------
+// User-facing messages of the integration, in the four languages of the Gladys
+// UI: English (the mandatory fallback), French, German and Spanish.
+//
+// Gladys picks the user's language out of every multi-language object
+// `{ en, fr, de, es }` (action messages, connection status, widget texts,
+// toasts), so the code never formats a message for one language only.
+// `test/i18n.test.js` checks that every message carries the four languages.
+// -----------------------------------------------------------------------------
+
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+export const MESSAGES = {
+  // --- Battery states (scene trigger values, widget status) ----------------
+  state_charging: { en: 'Charging', fr: 'En charge', de: 'Lädt', es: 'Cargando' },
+  state_discharging: {
+    en: 'Discharging',
+    fr: 'En décharge',
+    de: 'Entlädt',
+    es: 'Descargando',
+  },
+  state_empty: { en: 'Empty', fr: 'Vide', de: 'Leer', es: 'Vacía' },
+  state_idle: { en: 'Idle', fr: 'Au repos', de: 'Ruhezustand', es: 'En reposo' },
+  state_unknown: { en: 'Unknown', fr: 'Inconnu', de: 'Unbekannt', es: 'Desconocido' },
+
+  // --- Data sources ---------------------------------------------------------
+  source_local: {
+    en: 'Local (Shelly)',
+    fr: 'Locale (Shelly)',
+    de: 'Lokal (Shelly)',
+    es: 'Local (Shelly)',
+  },
+  source_cloud: {
+    en: 'Cloud (Linky)',
+    fr: 'Cloud (Linky)',
+    de: 'Cloud (Linky)',
+    es: 'Nube (Linky)',
+  },
+  source_none: {
+    en: 'Not configured',
+    fr: 'Non configurée',
+    de: 'Nicht konfiguriert',
+    es: 'No configurada',
+  },
+  source_unreachable: {
+    en: 'Unreachable',
+    fr: 'Injoignable',
+    de: 'Nicht erreichbar',
+    es: 'Inaccesible',
+  },
+
+  // --- Connection status ----------------------------------------------------
+  status_not_configured: {
+    en: 'No data source: fill in the Shelly address or the Linky token and meter number.',
+    fr: 'Aucune source de données : renseignez l’adresse du Shelly ou le jeton et le numéro du compteur Linky.',
+    de: 'Keine Datenquelle: Geben Sie die Shelly-Adresse oder das Linky-Token und die Zählernummer ein.',
+    es: 'Sin fuente de datos: indique la dirección del Shelly o el token y el número del contador Linky.',
+  },
+  status_unreachable: {
+    en: 'The data source does not answer: {error}',
+    fr: 'La source de données ne répond pas : {error}',
+    de: 'Die Datenquelle antwortet nicht: {error}',
+    es: 'La fuente de datos no responde: {error}',
+  },
+  status_init_failed: {
+    en: 'Initialization failed, check the integration logs.',
+    fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+    de: 'Initialisierung fehlgeschlagen, prüfen Sie die Logs der Integration.',
+    es: 'La inicialización falló, consulte los registros de la integración.',
+  },
+
+  // --- Degraded transports --------------------------------------------------
+  degraded_local_fallback: {
+    en: 'Shelly unreachable, using the Linky cloud data instead.',
+    fr: 'Shelly injoignable, utilisation des données cloud Linky.',
+    de: 'Shelly nicht erreichbar, es werden die Linky-Clouddaten verwendet.',
+    es: 'Shelly inaccesible, se usan los datos en la nube de Linky.',
+  },
+  degraded_cloud_fallback: {
+    en: 'Linky cloud unreachable, using the local Shelly meter instead.',
+    fr: 'Cloud Linky injoignable, utilisation du compteur Shelly local.',
+    de: 'Linky-Cloud nicht erreichbar, es wird der lokale Shelly-Zähler verwendet.',
+    es: 'Nube Linky inaccesible, se usa el medidor Shelly local.',
+  },
+
+  // --- Configuration screen actions -----------------------------------------
+  test_local_ok: {
+    en: 'Shelly OK: import {import} kWh, export {export} kWh, {power} W now.',
+    fr: 'Shelly OK : soutirage {import} kWh, injection {export} kWh, {power} W actuellement.',
+    de: 'Shelly OK: Bezug {import} kWh, Einspeisung {export} kWh, aktuell {power} W.',
+    es: 'Shelly OK: consumo {import} kWh, inyección {export} kWh, {power} W ahora.',
+  },
+  test_cloud_ok: {
+    en: 'Linky OK: on {date}, import {import} kWh, export {export} kWh.',
+    fr: 'Linky OK : le {date}, soutirage {import} kWh, injection {export} kWh.',
+    de: 'Linky OK: am {date} Bezug {import} kWh, Einspeisung {export} kWh.',
+    es: 'Linky OK: el {date}, consumo {import} kWh, inyección {export} kWh.',
+  },
+  test_cloud_empty: {
+    en: 'Linky OK, but no daily reading yet for the last days.',
+    fr: 'Linky OK, mais aucun relevé quotidien pour les derniers jours.',
+    de: 'Linky OK, aber noch keine Tageswerte für die letzten Tage.',
+    es: 'Linky OK, pero aún no hay lecturas diarias de los últimos días.',
+  },
+  test_failed: {
+    en: '{source}: failed ({error}).',
+    fr: '{source} : échec ({error}).',
+    de: '{source}: fehlgeschlagen ({error}).',
+    es: '{source}: error ({error}).',
+  },
+  calibrated: {
+    en: 'Virtual battery set to {stock} kWh.',
+    fr: 'Batterie virtuelle réglée à {stock} kWh.',
+    de: 'Virtuelle Batterie auf {stock} kWh gesetzt.',
+    es: 'Batería virtual ajustada a {stock} kWh.',
+  },
+  invalid_stock: {
+    en: 'Enter a stock between 0 and 1,000,000 kWh.',
+    fr: 'Saisissez un stock entre 0 et 1 000 000 kWh.',
+    de: 'Geben Sie einen Bestand zwischen 0 und 1.000.000 kWh ein.',
+    es: 'Introduzca un saldo entre 0 y 1.000.000 kWh.',
+  },
+  accounting_on: {
+    en: 'Virtual battery accounting resumed.',
+    fr: 'Comptabilisation de la batterie virtuelle reprise.',
+    de: 'Abrechnung der virtuellen Batterie fortgesetzt.',
+    es: 'Contabilización de la batería virtual reanudada.',
+  },
+  accounting_off: {
+    en: 'Virtual battery accounting paused.',
+    fr: 'Comptabilisation de la batterie virtuelle en pause.',
+    de: 'Abrechnung der virtuellen Batterie pausiert.',
+    es: 'Contabilización de la batería virtual en pausa.',
+  },
+  refreshed: {
+    en: 'Data refreshed: {stock} kWh in the virtual battery.',
+    fr: 'Données actualisées : {stock} kWh dans la batterie virtuelle.',
+    de: 'Daten aktualisiert: {stock} kWh in der virtuellen Batterie.',
+    es: 'Datos actualizados: {stock} kWh en la batería virtual.',
+  },
+  refresh_failed: {
+    en: 'Refresh failed: {error}',
+    fr: "L'actualisation a échoué : {error}",
+    de: 'Aktualisierung fehlgeschlagen: {error}',
+    es: 'La actualización falló: {error}',
+  },
+
+  // --- Widgets ---------------------------------------------------------------
+  w_level: { en: 'Level', fr: 'Niveau', de: 'Füllstand', es: 'Nivel' },
+  w_stock: { en: 'Stock', fr: 'Stock', de: 'Bestand', es: 'Saldo' },
+  w_charge_power: { en: 'Charging', fr: 'Charge', de: 'Laden', es: 'Carga' },
+  w_discharge_power: { en: 'Discharging', fr: 'Décharge', de: 'Entladen', es: 'Descarga' },
+  w_state: { en: 'State', fr: 'État', de: 'Zustand', es: 'Estado' },
+  w_source: {
+    en: 'Data source',
+    fr: 'Source des données',
+    de: 'Datenquelle',
+    es: 'Fuente de datos',
+  },
+  w_savings: {
+    en: 'Savings',
+    fr: 'Économies',
+    de: 'Ersparnis',
+    es: 'Ahorro',
+  },
+  w_last_update: {
+    en: 'Last update',
+    fr: 'Dernière mise à jour',
+    de: 'Letzte Aktualisierung',
+    es: 'Última actualización',
+  },
+  w_never: { en: 'Never', fr: 'Jamais', de: 'Nie', es: 'Nunca' },
+  w_accounting: {
+    en: 'Accounting',
+    fr: 'Comptabilisation',
+    de: 'Abrechnung',
+    es: 'Contabilización',
+  },
+  w_on: { en: 'Active', fr: 'Active', de: 'Aktiv', es: 'Activa' },
+  w_off: { en: 'Paused', fr: 'En pause', de: 'Pausiert', es: 'En pausa' },
+  w_stock_history: {
+    en: 'Virtual battery stock',
+    fr: 'Stock de la batterie virtuelle',
+    de: 'Bestand der virtuellen Batterie',
+    es: 'Saldo de la batería virtual',
+  },
+  w_refresh: { en: 'Refresh', fr: 'Actualiser', de: 'Aktualisieren', es: 'Actualizar' },
+  w_calibrate: {
+    en: 'Set the stock',
+    fr: 'Régler le stock',
+    de: 'Bestand setzen',
+    es: 'Ajustar saldo',
+  },
+  w_calibrate_field: {
+    en: 'Stock shown by Urban Solar (kWh)',
+    fr: 'Stock affiché par Urban Solar (kWh)',
+    de: 'Bestand laut Urban Solar (kWh)',
+    es: 'Saldo según Urban Solar (kWh)',
+  },
+  w_pause: { en: 'Pause', fr: 'Mettre en pause', de: 'Pausieren', es: 'Pausar' },
+  w_resume: { en: 'Resume', fr: 'Reprendre', de: 'Fortsetzen', es: 'Reanudar' },
+  w_today: { en: 'Today', fr: "Aujourd'hui", de: 'Heute', es: 'Hoy' },
+  w_last_day: { en: 'Day {date}', fr: 'Journée du {date}', de: 'Tag {date}', es: 'Día {date}' },
+  w_charged: { en: 'Stored', fr: 'Stocké', de: 'Gespeichert', es: 'Almacenado' },
+  w_discharged: { en: 'Withdrawn', fr: 'Déstocké', de: 'Entnommen', es: 'Retirado' },
+  w_grid_import: {
+    en: 'Full-price grid',
+    fr: 'Réseau plein tarif',
+    de: 'Netz Volltarif',
+    es: 'Red tarifa plena',
+  },
+  w_total_charged: {
+    en: 'Total stored',
+    fr: 'Total stocké',
+    de: 'Insgesamt gespeichert',
+    es: 'Total almacenado',
+  },
+  w_total_discharged: {
+    en: 'Total withdrawn',
+    fr: 'Total déstocké',
+    de: 'Insgesamt entnommen',
+    es: 'Total retirado',
+  },
+  w_total_grid: {
+    en: 'Total full-price grid',
+    fr: 'Total réseau plein tarif',
+    de: 'Netz Volltarif gesamt',
+    es: 'Total red tarifa plena',
+  },
+  w_coverage: {
+    en: 'Covered by the battery',
+    fr: 'Couvert par la batterie',
+    de: 'Durch die Batterie gedeckt',
+    es: 'Cubierto por la batería',
+  },
+  w_indexes: {
+    en: 'Stored and withdrawn energy',
+    fr: 'Énergie stockée et déstockée',
+    de: 'Gespeicherte und entnommene Energie',
+    es: 'Energía almacenada y retirada',
+  },
+  w_unknown_action: {
+    en: 'Unknown widget action.',
+    fr: 'Action de widget inconnue.',
+    de: 'Unbekannte Widget-Aktion.',
+    es: 'Acción de widget desconocida.',
+  },
+};
+
+/**
+ * Multi-language message `{ en, fr, de, es }` for `key`, with every `{name}`
+ * placeholder replaced by `vars[name]`.
+ * @param {keyof typeof MESSAGES} key
+ * @param {Record<string, string | number>} [vars]
+ */
+export function t(key, vars = {}) {
+  const message = MESSAGES[key];
+  if (!message) {
+    throw new Error(`Unknown message key: ${key}`);
+  }
+  const result = {};
+  for (const lang of LANGUAGES) {
+    result[lang] = message[lang].replace(/\{(\w+)\}/g, (match, name) =>
+      vars[name] === undefined ? match : String(vars[name]),
+    );
+  }
+  return result;
+}

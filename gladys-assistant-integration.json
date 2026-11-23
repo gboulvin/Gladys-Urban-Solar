@@ -1,0 +1,885 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Urban Solar",
+  "description": {
+    "en": "Track and control your Urban Solar virtual battery: stock, savings, scenes and widgets.",
+    "fr": "Suivez et pilotez votre batterie virtuelle Urban Solar : stock, économies, scènes, widgets.",
+    "de": "Virtuelle Batterie von Urban Solar: Bestand, Ersparnis, Szenen und Widgets.",
+    "es": "Siga y controle su batería virtual Urban Solar: saldo, ahorro, escenas y widgets."
+  },
+  "version": "0.0.0",
+  "docker_image": "ghcr.io/gboulvin/gladys-urban-solar:0.0.0",
+  "gladys_version": ">=5.1.0",
+  "cover_image": "https://raw.githubusercontent.com/gboulvin/Gladys-Urban-Solar/main/cover.png",
+  "categories": ["energy"],
+  "keywords": [
+    "urban solar",
+    "batterie virtuelle",
+    "virtual battery",
+    "solaire",
+    "photovoltaïque",
+    "linky",
+    "shelly",
+    "autoconsommation"
+  ],
+  "countries": ["FR"],
+  "transports": ["local", "cloud"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": {
+        "en": "Your virtual battery",
+        "fr": "Votre batterie virtuelle",
+        "de": "Ihre virtuelle Batterie",
+        "es": "Su batería virtual"
+      },
+      "description": {
+        "en": "Urban Solar credits the solar energy you inject into the grid to a virtual battery, and takes the energy you draw from the grid out of it. The integration rebuilds that ledger from your meter readings: connect a local Shelly meter, the Linky cloud readings, or both.",
+        "fr": "Urban Solar crédite l'énergie solaire que vous injectez sur le réseau dans une batterie virtuelle, et y puise l'énergie que vous soutirez. L'intégration reconstitue ce compte à partir des relevés de votre compteur : branchez un compteur Shelly local, les relevés cloud du Linky, ou les deux.",
+        "de": "Urban Solar schreibt den eingespeisten Solarstrom einer virtuellen Batterie gut und entnimmt ihr den aus dem Netz bezogenen Strom. Die Integration rekonstruiert dieses Konto aus Ihren Zählerständen: Verbinden Sie einen lokalen Shelly-Zähler, die Linky-Clouddaten oder beides.",
+        "es": "Urban Solar abona la energía solar que inyecta a la red en una batería virtual y descuenta de ella la energía que consume de la red. La integración reconstruye esa cuenta a partir de las lecturas de su contador: conecte un medidor Shelly local, las lecturas en la nube del Linky, o ambos."
+      },
+      "links": [
+        {
+          "url": "https://www.urbansolarenergy.fr/",
+          "label": {
+            "en": "Urban Solar Energy",
+            "fr": "Urban Solar Energy",
+            "de": "Urban Solar Energy",
+            "es": "Urban Solar Energy"
+          }
+        }
+      ]
+    },
+    {
+      "key": "local_section",
+      "type": "section",
+      "label": {
+        "en": "Local source: Shelly meter",
+        "fr": "Source locale : compteur Shelly",
+        "de": "Lokale Quelle: Shelly-Zähler",
+        "es": "Fuente local: medidor Shelly"
+      },
+      "description": {
+        "en": "A Shelly Pro 3EM, Pro EM or EM Gen3 clamped on the grid connection, read over your network every refresh interval. Live powers, no cloud.",
+        "fr": "Un Shelly Pro 3EM, Pro EM ou EM Gen3 posé sur l'arrivée du réseau, lu sur votre réseau local à chaque intervalle. Puissances en direct, sans cloud.",
+        "de": "Ein Shelly Pro 3EM, Pro EM oder EM Gen3 am Netzanschluss, in jedem Intervall über Ihr lokales Netz gelesen. Live-Leistungen, ohne Cloud.",
+        "es": "Un Shelly Pro 3EM, Pro EM o EM Gen3 en la acometida, leído por su red local en cada intervalo. Potencias en directo, sin nube."
+      }
+    },
+    {
+      "key": "shelly_host",
+      "type": "string",
+      "label": {
+        "en": "Shelly address",
+        "fr": "Adresse du Shelly",
+        "de": "Shelly-Adresse",
+        "es": "Dirección del Shelly"
+      },
+      "description": {
+        "en": "IP address or host name of the meter, without http://. Leave empty to use only the cloud source.",
+        "fr": "Adresse IP ou nom d'hôte du compteur, sans http://. Laissez vide pour n'utiliser que la source cloud.",
+        "de": "IP-Adresse oder Hostname des Zählers, ohne http://. Leer lassen, um nur die Cloud-Quelle zu nutzen.",
+        "es": "Dirección IP o nombre de host del medidor, sin http://. Déjelo vacío para usar solo la fuente en la nube."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50",
+        "fr": "ex. 192.168.1.50",
+        "de": "z. B. 192.168.1.50",
+        "es": "p. ej. 192.168.1.50"
+      },
+      "required": false
+    },
+    {
+      "key": "shelly_model",
+      "type": "select",
+      "label": {
+        "en": "Shelly model",
+        "fr": "Modèle de Shelly",
+        "de": "Shelly-Modell",
+        "es": "Modelo de Shelly"
+      },
+      "required": false,
+      "default": "em3",
+      "options": [
+        {
+          "value": "em3",
+          "label": {
+            "en": "Three-phase (Pro 3EM, 3EM Gen3)",
+            "fr": "Triphasé (Pro 3EM, 3EM Gen3)",
+            "de": "Dreiphasig (Pro 3EM, 3EM Gen3)",
+            "es": "Trifásico (Pro 3EM, 3EM Gen3)"
+          }
+        },
+        {
+          "value": "em1",
+          "label": {
+            "en": "Single-phase (Pro EM, EM Gen3)",
+            "fr": "Monophasé (Pro EM, EM Gen3)",
+            "de": "Einphasig (Pro EM, EM Gen3)",
+            "es": "Monofásico (Pro EM, EM Gen3)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "cloud_section",
+      "type": "section",
+      "label": {
+        "en": "Cloud source: Linky readings",
+        "fr": "Source cloud : relevés Linky",
+        "de": "Cloud-Quelle: Linky-Daten",
+        "es": "Fuente en la nube: lecturas Linky"
+      },
+      "description": {
+        "en": "The daily readings of your Linky meter, published by Enedis the next day, through the free Conso API. Create your token on its website with your Enedis account.",
+        "fr": "Les relevés quotidiens de votre Linky, publiés par Enedis le lendemain, via l'API gratuite Conso. Créez votre jeton sur son site avec votre compte Enedis.",
+        "de": "Die Tageswerte Ihres Linky-Zählers, von Enedis am Folgetag veröffentlicht, über die kostenlose Conso-API. Erstellen Sie Ihr Token auf deren Website mit Ihrem Enedis-Konto.",
+        "es": "Las lecturas diarias de su contador Linky, publicadas por Enedis al día siguiente, mediante la API gratuita Conso. Cree su token en su web con su cuenta Enedis."
+      },
+      "links": [
+        {
+          "url": "https://conso.boris.sh/",
+          "label": {
+            "en": "Get a Conso API token",
+            "fr": "Obtenir un jeton Conso API",
+            "de": "Conso-API-Token erhalten",
+            "es": "Obtener un token de Conso API"
+          }
+        }
+      ]
+    },
+    {
+      "key": "prm",
+      "type": "string",
+      "label": {
+        "en": "Linky meter number (PRM)",
+        "fr": "Numéro du compteur Linky (PRM)",
+        "de": "Linky-Zählernummer (PRM)",
+        "es": "Número del contador Linky (PRM)"
+      },
+      "description": {
+        "en": "The 14 digits shown on your bill or on the meter.",
+        "fr": "Les 14 chiffres indiqués sur votre facture ou sur le compteur.",
+        "de": "Die 14 Ziffern auf Ihrer Rechnung oder am Zähler.",
+        "es": "Los 14 dígitos que figuran en su factura o en el contador."
+      },
+      "placeholder": {
+        "en": "e.g. 12345678901234",
+        "fr": "ex. 12345678901234",
+        "de": "z. B. 12345678901234",
+        "es": "p. ej. 12345678901234"
+      },
+      "required": false
+    },
+    {
+      "key": "conso_token",
+      "type": "secret",
+      "label": {
+        "en": "Conso API token",
+        "fr": "Jeton Conso API",
+        "de": "Conso-API-Token",
+        "es": "Token de Conso API"
+      },
+      "placeholder": {
+        "en": "Paste your token",
+        "fr": "Collez votre jeton",
+        "de": "Token einfügen",
+        "es": "Pegue su token"
+      },
+      "required": false
+    },
+    {
+      "key": "battery_section",
+      "type": "section",
+      "label": {
+        "en": "Virtual battery",
+        "fr": "Batterie virtuelle",
+        "de": "Virtuelle Batterie",
+        "es": "Batería virtual"
+      },
+      "description": {
+        "en": "Prices of your contract and alert threshold. After the installation, set the current stock with the \"Set the stock\" action, using the value of your Urban Solar customer area.",
+        "fr": "Tarifs de votre contrat et seuil d'alerte. Après l'installation, réglez le stock actuel avec l'action « Régler le stock », d'après la valeur de votre espace client Urban Solar.",
+        "de": "Preise Ihres Vertrags und Warnschwelle. Setzen Sie nach der Installation den aktuellen Bestand mit der Aktion „Bestand setzen“, laut Ihrem Urban-Solar-Kundenbereich.",
+        "es": "Precios de su contrato y umbral de alerta. Tras la instalación, ajuste el saldo actual con la acción «Ajustar saldo», según el valor de su área de cliente Urban Solar."
+      }
+    },
+    {
+      "key": "capacity_kwh",
+      "type": "number",
+      "label": {
+        "en": "Reference capacity (kWh)",
+        "fr": "Capacité de référence (kWh)",
+        "de": "Referenzkapazität (kWh)",
+        "es": "Capacidad de referencia (kWh)"
+      },
+      "description": {
+        "en": "The virtual battery has no real limit: this is the stock shown as 100 %.",
+        "fr": "La batterie virtuelle n'a pas de limite réelle : c'est le stock affiché à 100 %.",
+        "de": "Die virtuelle Batterie hat keine echte Grenze: Dies ist der als 100 % angezeigte Bestand.",
+        "es": "La batería virtual no tiene un límite real: es el saldo mostrado como 100 %."
+      },
+      "required": false,
+      "default": 1000,
+      "min": 1,
+      "max": 1000000
+    },
+    {
+      "key": "grid_price",
+      "type": "number",
+      "label": {
+        "en": "Grid price (€/kWh)",
+        "fr": "Prix du kWh réseau (€/kWh)",
+        "de": "Netzpreis (€/kWh)",
+        "es": "Precio de la red (€/kWh)"
+      },
+      "description": {
+        "en": "Price of a kWh bought from the grid, taxes included.",
+        "fr": "Prix d'un kWh acheté au réseau, toutes taxes comprises.",
+        "de": "Preis einer aus dem Netz bezogenen kWh, inklusive Steuern.",
+        "es": "Precio de un kWh comprado a la red, impuestos incluidos."
+      },
+      "required": false,
+      "default": 0.1952,
+      "min": 0,
+      "max": 5
+    },
+    {
+      "key": "discharge_fee",
+      "type": "number",
+      "label": {
+        "en": "Withdrawal fee (€/kWh)",
+        "fr": "Frais de déstockage (€/kWh)",
+        "de": "Entnahmegebühr (€/kWh)",
+        "es": "Tarifa de retirada (€/kWh)"
+      },
+      "description": {
+        "en": "What a kWh taken from the virtual battery still costs (transport, taxes): check your contract.",
+        "fr": "Ce que coûte encore un kWh puisé dans la batterie virtuelle (acheminement, taxes) : voir votre contrat.",
+        "de": "Was eine aus der virtuellen Batterie entnommene kWh noch kostet (Netz, Steuern): siehe Ihr Vertrag.",
+        "es": "Lo que aún cuesta un kWh retirado de la batería virtual (transporte, impuestos): vea su contrato."
+      },
+      "required": false,
+      "default": 0.07,
+      "min": 0,
+      "max": 5
+    },
+    {
+      "key": "low_stock_kwh",
+      "type": "number",
+      "label": {
+        "en": "Low stock alert (kWh)",
+        "fr": "Alerte de stock bas (kWh)",
+        "de": "Warnung bei niedrigem Bestand (kWh)",
+        "es": "Alerta de saldo bajo (kWh)"
+      },
+      "description": {
+        "en": "Fires the \"Low virtual battery stock\" scene trigger when the stock falls below it.",
+        "fr": "Déclenche le déclencheur de scène « Stock de batterie virtuelle bas » quand le stock passe en dessous.",
+        "de": "Löst den Szenenauslöser „Niedriger Bestand der virtuellen Batterie“ aus, wenn der Bestand darunter fällt.",
+        "es": "Activa el disparador de escena «Saldo bajo de la batería virtual» cuando el saldo baja de este valor."
+      },
+      "required": false,
+      "default": 10,
+      "min": 0,
+      "max": 1000000
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": {
+        "en": "Refresh interval (s)",
+        "fr": "Intervalle de rafraîchissement (s)",
+        "de": "Aktualisierungsintervall (s)",
+        "es": "Intervalo de actualización (s)"
+      },
+      "description": {
+        "en": "How often the Shelly meter is read (one minute minimum). The Linky readings are checked every 3 hours.",
+        "fr": "Fréquence de lecture du Shelly (une minute minimum). Les relevés Linky sont vérifiés toutes les 3 heures.",
+        "de": "Wie oft der Shelly gelesen wird (mindestens eine Minute). Die Linky-Daten werden alle 3 Stunden geprüft.",
+        "es": "Frecuencia de lectura del Shelly (un minuto como mínimo). Las lecturas Linky se comprueban cada 3 horas."
+      },
+      "required": false,
+      "default": 60,
+      "min": 60,
+      "max": 3600
+    },
+    {
+      "key": "timezone",
+      "type": "string",
+      "label": {
+        "en": "Time zone",
+        "fr": "Fuseau horaire",
+        "de": "Zeitzone",
+        "es": "Zona horaria"
+      },
+      "description": {
+        "en": "Time zone of the meter days (IANA name).",
+        "fr": "Fuseau horaire des journées du compteur (nom IANA).",
+        "de": "Zeitzone der Zählertage (IANA-Name).",
+        "es": "Zona horaria de los días del contador (nombre IANA)."
+      },
+      "placeholder": {
+        "en": "Europe/Paris",
+        "fr": "Europe/Paris",
+        "de": "Europe/Paris",
+        "es": "Europe/Paris"
+      },
+      "required": false,
+      "default": "Europe/Paris"
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "label": {
+        "en": "Test the data sources",
+        "fr": "Tester les sources de données",
+        "de": "Datenquellen testen",
+        "es": "Probar las fuentes de datos"
+      },
+      "timeout_seconds": 45
+    },
+    {
+      "key": "calibrate_stock",
+      "label": {
+        "en": "Set the stock",
+        "fr": "Régler le stock",
+        "de": "Bestand setzen",
+        "es": "Ajustar saldo"
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock shown by Urban Solar (kWh)",
+            "fr": "Stock affiché par Urban Solar (kWh)",
+            "de": "Bestand laut Urban Solar (kWh)",
+            "es": "Saldo según Urban Solar (kWh)"
+          },
+          "placeholder": {
+            "en": "e.g. 245.6",
+            "fr": "ex. 245,6",
+            "de": "z. B. 245,6",
+            "es": "p. ej. 245,6"
+          },
+          "required": true,
+          "min": 0,
+          "max": 1000000
+        }
+      ]
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "battery_state_changed",
+      "label": {
+        "en": "Virtual battery state changed",
+        "fr": "État de la batterie virtuelle changé",
+        "de": "Zustand der virtuellen Batterie geändert",
+        "es": "Cambio de estado de la batería virtual"
+      },
+      "description": {
+        "en": "The virtual battery starts charging, discharging, becomes empty or idle.",
+        "fr": "La batterie virtuelle se met à charger, à se décharger, devient vide ou au repos.",
+        "de": "Die virtuelle Batterie beginnt zu laden, zu entladen, wird leer oder geht in Ruhe.",
+        "es": "La batería virtual empieza a cargarse, a descargarse, se vacía o queda en reposo."
+      },
+      "fields": [
+        {
+          "key": "state",
+          "type": "multi_select",
+          "label": {
+            "en": "New state",
+            "fr": "Nouvel état",
+            "de": "Neuer Zustand",
+            "es": "Nuevo estado"
+          },
+          "options": [
+            {
+              "value": "charging",
+              "label": { "en": "Charging", "fr": "En charge", "de": "Lädt", "es": "Cargando" }
+            },
+            {
+              "value": "discharging",
+              "label": {
+                "en": "Discharging",
+                "fr": "En décharge",
+                "de": "Entlädt",
+                "es": "Descargando"
+              }
+            },
+            {
+              "value": "empty",
+              "label": { "en": "Empty", "fr": "Vide", "de": "Leer", "es": "Vacía" }
+            },
+            {
+              "value": "idle",
+              "label": { "en": "Idle", "fr": "Au repos", "de": "Ruhezustand", "es": "En reposo" }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "state",
+          "type": "string",
+          "label": { "en": "State", "fr": "État", "de": "Zustand", "es": "Estado" }
+        },
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "low_stock",
+      "label": {
+        "en": "Low virtual battery stock",
+        "fr": "Stock de batterie virtuelle bas",
+        "de": "Niedriger Bestand der virtuellen Batterie",
+        "es": "Saldo bajo de la batería virtual"
+      },
+      "description": {
+        "en": "The stock fell below the alert threshold of the configuration.",
+        "fr": "Le stock est passé sous le seuil d'alerte de la configuration.",
+        "de": "Der Bestand ist unter die Warnschwelle der Konfiguration gefallen.",
+        "es": "El saldo bajó del umbral de alerta de la configuración."
+      },
+      "variables": [
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        },
+        {
+          "key": "threshold_kwh",
+          "type": "number",
+          "label": {
+            "en": "Threshold (kWh)",
+            "fr": "Seuil (kWh)",
+            "de": "Schwelle (kWh)",
+            "es": "Umbral (kWh)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "daily_summary",
+      "label": {
+        "en": "Virtual battery daily summary",
+        "fr": "Bilan quotidien de la batterie virtuelle",
+        "de": "Tagesbilanz der virtuellen Batterie",
+        "es": "Balance diario de la batería virtual"
+      },
+      "description": {
+        "en": "A day is closed: energy stored, withdrawn and bought at full price.",
+        "fr": "Une journée est close : énergie stockée, déstockée et achetée plein tarif.",
+        "de": "Ein Tag ist abgeschlossen: gespeicherte, entnommene und voll bezahlte Energie.",
+        "es": "Un día cerrado: energía almacenada, retirada y comprada a tarifa plena."
+      },
+      "variables": [
+        {
+          "key": "date",
+          "type": "string",
+          "label": { "en": "Day", "fr": "Jour", "de": "Tag", "es": "Día" }
+        },
+        {
+          "key": "charged_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stored (kWh)",
+            "fr": "Stocké (kWh)",
+            "de": "Gespeichert (kWh)",
+            "es": "Almacenado (kWh)"
+          }
+        },
+        {
+          "key": "discharged_kwh",
+          "type": "number",
+          "label": {
+            "en": "Withdrawn (kWh)",
+            "fr": "Déstocké (kWh)",
+            "de": "Entnommen (kWh)",
+            "es": "Retirado (kWh)"
+          }
+        },
+        {
+          "key": "grid_import_kwh",
+          "type": "number",
+          "label": {
+            "en": "Full-price grid (kWh)",
+            "fr": "Réseau plein tarif (kWh)",
+            "de": "Netz Volltarif (kWh)",
+            "es": "Red tarifa plena (kWh)"
+          }
+        },
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        },
+        {
+          "key": "savings_eur",
+          "type": "number",
+          "label": {
+            "en": "Total savings (€)",
+            "fr": "Économies totales (€)",
+            "de": "Gesamtersparnis (€)",
+            "es": "Ahorro total (€)"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "get_status",
+      "label": {
+        "en": "Read the virtual battery",
+        "fr": "Lire la batterie virtuelle",
+        "de": "Virtuelle Batterie auslesen",
+        "es": "Leer la batería virtual"
+      },
+      "description": {
+        "en": "Stock, level, state and savings, for the following actions.",
+        "fr": "Stock, niveau, état et économies, pour les actions suivantes.",
+        "de": "Bestand, Füllstand, Zustand und Ersparnis für die folgenden Aktionen.",
+        "es": "Saldo, nivel, estado y ahorro, para las acciones siguientes."
+      },
+      "timeout_seconds": 10,
+      "outputs": [
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        },
+        {
+          "key": "level_percent",
+          "type": "number",
+          "label": {
+            "en": "Level (%)",
+            "fr": "Niveau (%)",
+            "de": "Füllstand (%)",
+            "es": "Nivel (%)"
+          }
+        },
+        {
+          "key": "state",
+          "type": "string",
+          "label": { "en": "State", "fr": "État", "de": "Zustand", "es": "Estado" }
+        },
+        {
+          "key": "accounting",
+          "type": "boolean",
+          "label": {
+            "en": "Accounting active",
+            "fr": "Comptabilisation active",
+            "de": "Abrechnung aktiv",
+            "es": "Contabilización activa"
+          }
+        },
+        {
+          "key": "savings_eur",
+          "type": "number",
+          "label": {
+            "en": "Total savings (€)",
+            "fr": "Économies totales (€)",
+            "de": "Gesamtersparnis (€)",
+            "es": "Ahorro total (€)"
+          }
+        },
+        {
+          "key": "charged_today_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stored today (kWh)",
+            "fr": "Stocké aujourd'hui (kWh)",
+            "de": "Heute gespeichert (kWh)",
+            "es": "Almacenado hoy (kWh)"
+          }
+        },
+        {
+          "key": "discharged_today_kwh",
+          "type": "number",
+          "label": {
+            "en": "Withdrawn today (kWh)",
+            "fr": "Déstocké aujourd'hui (kWh)",
+            "de": "Heute entnommen (kWh)",
+            "es": "Retirado hoy (kWh)"
+          }
+        },
+        {
+          "key": "import_power_w",
+          "type": "number",
+          "label": {
+            "en": "Grid import power (W)",
+            "fr": "Puissance soutirée (W)",
+            "de": "Bezugsleistung (W)",
+            "es": "Potencia consumida (W)"
+          }
+        },
+        {
+          "key": "export_power_w",
+          "type": "number",
+          "label": {
+            "en": "Grid export power (W)",
+            "fr": "Puissance injectée (W)",
+            "de": "Einspeiseleistung (W)",
+            "es": "Potencia inyectada (W)"
+          }
+        },
+        {
+          "key": "source",
+          "type": "string",
+          "label": {
+            "en": "Data source",
+            "fr": "Source des données",
+            "de": "Datenquelle",
+            "es": "Fuente de datos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "refresh_data",
+      "label": {
+        "en": "Refresh the virtual battery",
+        "fr": "Actualiser la batterie virtuelle",
+        "de": "Virtuelle Batterie aktualisieren",
+        "es": "Actualizar la batería virtual"
+      },
+      "description": {
+        "en": "Reads the meter now instead of waiting for the next refresh.",
+        "fr": "Lit le compteur tout de suite au lieu d'attendre le prochain rafraîchissement.",
+        "de": "Liest den Zähler sofort, statt auf die nächste Aktualisierung zu warten.",
+        "es": "Lee el contador ahora en lugar de esperar a la próxima actualización."
+      },
+      "timeout_seconds": 45,
+      "outputs": [
+        {
+          "key": "success",
+          "type": "boolean",
+          "label": { "en": "Success", "fr": "Succès", "de": "Erfolg", "es": "Éxito" }
+        },
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "calibrate_stock",
+      "label": {
+        "en": "Set the virtual battery stock",
+        "fr": "Régler le stock de la batterie virtuelle",
+        "de": "Bestand der virtuellen Batterie setzen",
+        "es": "Ajustar el saldo de la batería virtual"
+      },
+      "description": {
+        "en": "Aligns the stock with the value of your Urban Solar customer area.",
+        "fr": "Aligne le stock sur la valeur de votre espace client Urban Solar.",
+        "de": "Gleicht den Bestand mit dem Wert Ihres Urban-Solar-Kundenbereichs ab.",
+        "es": "Alinea el saldo con el valor de su área de cliente Urban Solar."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          },
+          "required": true,
+          "min": 0,
+          "max": 1000000
+        }
+      ],
+      "outputs": [
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        },
+        {
+          "key": "level_percent",
+          "type": "number",
+          "label": {
+            "en": "Level (%)",
+            "fr": "Niveau (%)",
+            "de": "Füllstand (%)",
+            "es": "Nivel (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_accounting",
+      "label": {
+        "en": "Pause or resume the accounting",
+        "fr": "Suspendre ou reprendre le comptage",
+        "de": "Abrechnung pausieren oder fortsetzen",
+        "es": "Pausar o reanudar la contabilización"
+      },
+      "description": {
+        "en": "While paused, the meter readings no longer move the stock.",
+        "fr": "En pause, les relevés du compteur ne font plus varier le stock.",
+        "de": "Während der Pause verändern die Zählerstände den Bestand nicht mehr.",
+        "es": "En pausa, las lecturas del contador ya no modifican el saldo."
+      },
+      "timeout_seconds": 10,
+      "fields": [
+        {
+          "key": "enabled",
+          "type": "boolean",
+          "label": {
+            "en": "Accounting active",
+            "fr": "Comptabilisation active",
+            "de": "Abrechnung aktiv",
+            "es": "Contabilización activa"
+          },
+          "default": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "accounting",
+          "type": "boolean",
+          "label": {
+            "en": "Accounting active",
+            "fr": "Comptabilisation active",
+            "de": "Abrechnung aktiv",
+            "es": "Contabilización activa"
+          }
+        }
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "key": "virtual_battery",
+      "label": {
+        "en": "Virtual battery",
+        "fr": "Batterie virtuelle",
+        "de": "Virtuelle Batterie",
+        "es": "Batería virtual"
+      },
+      "description": {
+        "en": "Level, stock, live powers, state, savings and stock history, with controls.",
+        "fr": "Niveau, stock, puissances en direct, état, économies et historique, avec commandes.",
+        "de": "Füllstand, Bestand, Live-Leistung, Zustand, Ersparnis und Verlauf, mit Steuerung.",
+        "es": "Nivel, saldo, potencias en directo, estado, ahorro e historial, con controles."
+      },
+      "icon": "battery-charging",
+      "action_timeout_seconds": 45,
+      "settings": [
+        {
+          "key": "chart_interval",
+          "type": "select",
+          "label": {
+            "en": "History period",
+            "fr": "Période de l'historique",
+            "de": "Verlaufszeitraum",
+            "es": "Periodo del historial"
+          },
+          "default": "last-week",
+          "options": [
+            {
+              "value": "last-day",
+              "label": {
+                "en": "Last day",
+                "fr": "Dernier jour",
+                "de": "Letzter Tag",
+                "es": "Último día"
+              }
+            },
+            {
+              "value": "last-week",
+              "label": {
+                "en": "Last week",
+                "fr": "Dernière semaine",
+                "de": "Letzte Woche",
+                "es": "Última semana"
+              }
+            },
+            {
+              "value": "last-month",
+              "label": {
+                "en": "Last month",
+                "fr": "Dernier mois",
+                "de": "Letzter Monat",
+                "es": "Último mes"
+              }
+            },
+            {
+              "value": "last-year",
+              "label": {
+                "en": "Last year",
+                "fr": "Dernière année",
+                "de": "Letztes Jahr",
+                "es": "Último año"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "energy_balance",
+      "label": {
+        "en": "Energy balance",
+        "fr": "Bilan énergétique",
+        "de": "Energiebilanz",
+        "es": "Balance energético"
+      },
+      "description": {
+        "en": "Energy stored and withdrawn per day and in total, coverage and savings.",
+        "fr": "Énergie stockée et déstockée par jour et au total, couverture et économies.",
+        "de": "Gespeicherte und entnommene Energie pro Tag und gesamt, Deckung und Ersparnis.",
+        "es": "Energía almacenada y retirada por día y en total, cobertura y ahorro."
+      },
+      "icon": "bar-chart-2",
+      "action_timeout_seconds": 15
+    }
+  ]
+}
