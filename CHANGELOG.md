@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-23
+
 ### Added
 
 - An "Urban Solar — virtual battery" energy contract template: the prices are
@@ -60,5 +62,6 @@ the notes of the version's GitHub Release.
   and user documentation.
 - `SECURITY.md` and `CLAUDE.md`.
 
-[Unreleased]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/releases/tag/v1.0.0
