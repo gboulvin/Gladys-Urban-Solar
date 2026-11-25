@@ -31,6 +31,15 @@ function statusOutputs(status) {
 }
 
 export const SCENE_ACTIONS = {
+  // The bridge to the devices of other integrations: a Gladys scene reads
+  // the cumulative indexes of the meter (energy monitoring, Shelly, current
+  // clamp...) and passes them here, as text fields where the scene variables
+  // ({{...}}) are substituted by the core.
+  async record_meter_reading({ fields, config, engine }) {
+    logger.debug('Scene action record_meter_reading', fields);
+    return engine.recordReading(fields, config);
+  },
+
   async get_status({ config, engine }) {
     return statusOutputs(engine.status(config));
   },

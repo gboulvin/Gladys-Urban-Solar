@@ -1,10 +1,10 @@
 // -----------------------------------------------------------------------------
-// LOCAL source: a Shelly energy meter (Gen2+ RPC API) clamped on the grid
+// SHELLY source: a Shelly energy meter (Gen2+ RPC API) clamped on the grid
 // connection, read over the LAN.
 //
 // The meter keeps two cumulative counters, in Wh: the energy imported from
 // the grid and the energy returned (injected) to it. The difference between
-// two reads is exactly what went through the Linky meter in between, which is
+// two reads is exactly what went through the grid meter in between, which is
 // what Urban Solar credits to and debits from the virtual battery. The instant
 // power (positive when importing, negative when exporting) drives the live
 // charge / discharge power features.

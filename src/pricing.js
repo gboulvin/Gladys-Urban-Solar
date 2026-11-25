@@ -10,9 +10,9 @@
 //
 // The answer must be deterministic (Gladys retries a request with the same
 // state), so it only depends on the recorded history, never on the stock of
-// the moment. The half-hour slot is used when the local meter recorded it,
-// the day otherwise (the Linky readings are daily). A recent interval the
-// ledger has not accounted yet (the Linky readings arrive the next day) fails
+// the moment. The half-hour slot is used when the readings recorded it,
+// the day otherwise (readings too far apart). A recent interval the ledger
+// has not accounted yet (a scene that has not reported yet) fails
 // the request, which Gladys retries later; an older unknown one, or one from
 // before the ledger started, is billed at the full grid price.
 // -----------------------------------------------------------------------------

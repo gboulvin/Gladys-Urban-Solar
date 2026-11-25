@@ -1,17 +1,19 @@
 // -----------------------------------------------------------------------------
-// The engine: reads the meter, keeps the virtual battery ledger, publishes the
-// device states and fires the scene triggers.
+// The engine: receives the meter readings, keeps the virtual battery ledger,
+// publishes the device states and fires the scene triggers.
 //
-// Sources (see src/config.js `sourceOrder`):
-//   - local: a Shelly meter, read every `poll_frequency` seconds. The ledger
-//     follows its cumulative counters, so a restart or a network outage loses
-//     nothing: the next read accounts for the whole gap.
-//   - cloud: the Linky daily readings (Conso API), fetched every few hours and
-//     accounted one whole day at a time, the day after.
-// With both configured, the "Prefer the local connection" toggle picks the
-// preferred one and the other one is a fallback, shown as a degraded badge.
-// A day the local meter accounted, even partly, is never accounted again from
-// the cloud readings, so a fallback never counts the same energy twice.
+// Two sources, one at a time (`data_source` in the configuration):
+//   - gladys: devices already in Gladys (the meter of the energy monitoring,
+//     a Shelly or a current clamp of another integration...). An external
+//     integration cannot read the devices of other integrations, so a Gladys
+//     scene reads their cumulative indexes and passes them to the "Record a
+//     meter reading" scene action (`recordReading`).
+//   - shelly: a Shelly energy meter read directly over the LAN, every
+//     `poll_frequency` seconds.
+// Both work on cumulative counters: the ledger accounts the difference
+// between two readings, so a missed reading, a restart or an outage loses
+// nothing — the next reading accounts for the whole gap. Switching sources
+// starts again from the next reading of the new one, never counting twice.
 // -----------------------------------------------------------------------------
 
 import { createLogger, DEVICE_TRANSPORTS } from '@gladysassistant/integration-sdk';
@@ -24,14 +26,15 @@ import {
   createInitialState,
   emptyDay,
   levelPercent,
+  parseReading,
   pruneCoverage,
   recordCoverage,
   restoreState,
   round,
   slotKeyOf,
 } from './battery.js';
-import { sourceOrder } from './config.js';
-import { addDays, daysBetween, localDay } from './dates.js';
+import { DATA_SOURCES, isSourceConfigured } from './config.js';
+import { localDay } from './dates.js';
 import {
   BATTERY_FEATURES,
   GRID_FEATURES,
@@ -41,7 +44,6 @@ import {
 } from './devices/index.js';
 import { t } from './i18n.js';
 import { currentPrice, priceIntervals } from './pricing.js';
-import { readDailyEnergy } from './sources/conso.js';
 import { readShelly } from './sources/shelly.js';
 import { createTariffs } from './tariffs.js';
 
@@ -54,20 +56,17 @@ export const SCENE_TRIGGERS = {
   DAILY_SUMMARY: 'daily_summary',
 };
 
-export const SOURCES = { LOCAL: 'local', CLOUD: 'cloud' };
+export const SOURCES = DATA_SOURCES;
 
-// The Linky readings of a day are published once, the next morning: there is
-// no point asking more often than every few hours.
-const CLOUD_FETCH_INTERVAL_MS = 3 * 60 * 60 * 1000;
-// How far back the cloud source catches up after a long outage.
-const CLOUD_MAX_CATCH_UP_DAYS = 30;
-// A missing day younger than this is waited for (Enedis publishes late
-// sometimes); an older one is given up, so the ledger never stalls.
-const CLOUD_GAP_WAIT_DAYS = 7;
 // Gladys' minute ticks drift by a few milliseconds.
 const REFRESH_TOLERANCE_MS = 5000;
 // Unchanged values are re-sent every 30 minutes, so they stay recently dated.
 const STATES_HEARTBEAT_MS = 30 * 60 * 1000;
+// Without a reading from the Gladys scene for this long, the source is
+// reported as stalled (the scene is disabled, or a device stopped reporting).
+export const GLADYS_READING_STALE_MS = 2 * 60 * 60 * 1000;
+// The live powers a scene reported are dropped after this long.
+const LIVE_POWER_TTL_MS = 15 * 60 * 1000;
 export const MAX_STOCK_KWH = 1000000;
 
 const NOT_CONFIGURED = Object.freeze({
@@ -78,6 +77,9 @@ const NOT_CONFIGURED = Object.freeze({
   message: null,
   error: null,
 });
+
+/** Multiply a reading by this to get Wh. */
+const UNIT_TO_WH = { kwh: 1000, wh: 1 };
 
 /**
  * @param {{ gladys: any, store: ReturnType<import('./store.js').createStore>,
@@ -94,7 +96,7 @@ export function createEngine({
   let state = createInitialState();
   let running = null;
   let lastRefreshAt = null;
-  let live = { importW: 0, exportW: 0 };
+  let live = { importW: 0, exportW: 0, at: null };
   let transport = NOT_CONFIGURED;
   let publishedTransportKey = null;
   let connectionKey = null;
@@ -154,23 +156,21 @@ export function createEngine({
     }
   }
 
-  // --- Sources -----------------------------------------------------------------
+  // --- Ledger ------------------------------------------------------------------
 
   function useSource(source) {
     if (state.activeSource === source) return;
     logger.info(`Data source: ${state.activeSource ?? 'none'} -> ${source}`);
-    if (source === SOURCES.LOCAL) {
-      // The counters moved while another source was accounting: start from
-      // the next read instead of accounting the whole gap a second time.
-      state.local.importWh = null;
-      state.local.exportWh = null;
-    }
+    // The counters moved while another source was accounting: start from
+    // the next reading instead of accounting the whole gap a second time.
+    const bookkeeping = source === SOURCES.SHELLY ? state.local : state.gladys;
+    bookkeeping.importWh = null;
+    bookkeeping.exportWh = null;
     state.activeSource = source;
   }
 
-  async function refreshLocal(config) {
-    const reading = await readShelly(config, { fetchImpl });
-    useSource(SOURCES.LOCAL);
+  /** Close the previous day when the local date changed. */
+  function rollDay(config) {
     const today = localDay(now(), config.timezone);
     if (state.day !== today) {
       if (state.day !== null) {
@@ -179,77 +179,68 @@ export function createEngine({
       state.day = today;
       state.today = emptyDay(today);
     }
-    const previous = state.local;
-    if (previous.importWh !== null) {
-      const importWh = reading.importWh - previous.importWh;
-      const exportWh = reading.exportWh - previous.exportWh;
-      if (importWh >= 0 && exportWh >= 0) {
-        const moved = applyInterval(
-          state,
-          { importKwh: importWh / 1000, exportKwh: exportWh / 1000 },
-          tariffs.ratesFor(today),
-        );
-        addToDay(state.today, moved);
-        if (state.accounting) {
-          // The energy flowed since the previous read: date it half a
-          // minute back, so a read just after a slot boundary still fills
-          // the slot it belongs to.
-          const slotKey = slotKeyOf(new Date(now().getTime() - 30000));
-          recordCoverage(state, { slotKey, dayKey: today }, moved);
-        }
-        state.local.lastDay = today;
-      } else {
-        // A replaced or reset meter: its counters went backwards.
-        logger.warn('The Shelly counters went backwards, starting again from this read');
-      }
+    return today;
+  }
+
+  /**
+   * Difference of a cumulative counter since its previous reading, in kWh.
+   * `null` for the first reading (it only sets the baseline) and when the
+   * counter went backwards (a replaced or reset meter: start over).
+   */
+  function counterDelta(bookkeeping, key, valueWh, label) {
+    if (valueWh === null) return 0;
+    const previous = bookkeeping[key];
+    bookkeeping[key] = valueWh;
+    if (previous === null) return null;
+    if (valueWh < previous) {
+      logger.warn(`The ${label} counter went backwards, starting again from this reading`);
+      return null;
     }
-    state.local.importWh = reading.importWh;
-    state.local.exportWh = reading.exportWh;
-    live = { importW: Math.max(0, reading.powerW), exportW: Math.max(0, -reading.powerW) };
+    return (valueWh - previous) / 1000;
+  }
+
+  /** Account the energy that went through the meter since the last reading. */
+  function account(config, { importKwh, exportKwh, flowedAt }) {
+    const today = rollDay(config);
+    const moved = applyInterval(state, { importKwh, exportKwh }, tariffs.ratesFor(today));
+    addToDay(state.today, moved);
+    if (state.accounting && (importKwh > 0 || exportKwh > 0)) {
+      recordCoverage(state, { slotKey: slotKeyOf(flowedAt), dayKey: today }, moved);
+    }
+    return moved;
+  }
+
+  async function refreshShelly(config) {
+    const reading = await readShelly(config, { fetchImpl });
+    useSource(SOURCES.SHELLY);
+    const importKwh = counterDelta(state.local, 'importWh', reading.importWh, 'Shelly import');
+    const exportKwh = counterDelta(state.local, 'exportWh', reading.exportWh, 'Shelly export');
+    // The energy flowed since the previous read: date it half a minute back,
+    // so a read just after a slot boundary still fills the slot it belongs to.
+    account(config, {
+      importKwh: importKwh ?? 0,
+      exportKwh: exportKwh ?? 0,
+      flowedAt: new Date(now().getTime() - 30000),
+    });
+    live = {
+      importW: Math.max(0, reading.powerW),
+      exportW: Math.max(0, -reading.powerW),
+      at: now().getTime(),
+    };
     updateBatteryState({ importing: live.importW, exporting: live.exportW });
   }
 
-  async function refreshCloud(config, { force }) {
-    useSource(SOURCES.CLOUD);
-    live = { importW: 0, exportW: 0 };
-    const nowDate = now();
-    const lastFetch = state.cloud.lastFetch ? Date.parse(state.cloud.lastFetch) : null;
-    if (!force && lastFetch !== null && nowDate.getTime() - lastFetch < CLOUD_FETCH_INTERVAL_MS) {
-      return;
+  /** Status of the Gladys source, from the date of its last reading. */
+  function checkGladysSource() {
+    const last = state.gladys.lastReadingAt ? Date.parse(state.gladys.lastReadingAt) : null;
+    if (last === null) {
+      return { key: 'status_waiting_reading', vars: {} };
     }
-    const today = localDay(nowDate, config.timezone);
-    // First start: only the last day. The past is the stock the user enters
-    // once with the calibration, as shown in the Urban Solar customer area.
-    let from = state.cloud.lastDay ? addDays(state.cloud.lastDay, 1) : addDays(today, -1);
-    if (state.local.lastDay && from <= state.local.lastDay) {
-      from = addDays(state.local.lastDay, 1);
+    const minutes = Math.round((now().getTime() - last) / 60000);
+    if (now().getTime() - last > GLADYS_READING_STALE_MS) {
+      return { key: 'status_stale_reading', vars: { minutes } };
     }
-    if (daysBetween(from, today) > CLOUD_MAX_CATCH_UP_DAYS) {
-      from = addDays(today, -CLOUD_MAX_CATCH_UP_DAYS);
-    }
-    if (from < today) {
-      const days = await readDailyEnergy(config, { from, to: today, fetchImpl });
-      let expected = from;
-      for (const day of days) {
-        if (day.date < expected) continue;
-        if (day.date !== expected && daysBetween(expected, today) <= CLOUD_GAP_WAIT_DAYS) {
-          break; // wait for the missing day
-        }
-        const moved = applyInterval(
-          state,
-          { importKwh: day.importWh / 1000, exportKwh: day.exportWh / 1000 },
-          tariffs.ratesFor(day.date),
-        );
-        if (state.accounting) {
-          recordCoverage(state, { dayKey: day.date }, moved);
-        }
-        closeDay({ date: day.date, ...moved });
-        updateBatteryState({ importing: day.importWh, exporting: day.exportWh });
-        state.cloud.lastDay = day.date;
-        expected = addDays(day.date, 1);
-      }
-    }
-    state.cloud.lastFetch = nowDate.toISOString();
+    return null;
   }
 
   // --- Publication ---------------------------------------------------------------
@@ -304,7 +295,7 @@ export function createEngine({
       message = t('status_not_configured');
     } else if (transport.error) {
       connected = false;
-      message = t('status_unreachable', { error: transport.error });
+      message = transport.message;
     }
     const key = JSON.stringify([connected, message?.en]);
     if (!force && key === connectionKey) return;
@@ -320,55 +311,27 @@ export function createEngine({
     }
   }
 
-  async function doRefresh(config, { force }) {
-    const previousStock = state.stockKwh;
-    await tariffs.refresh();
-    const order = sourceOrder(config);
-    if (order.length === 0) {
-      transport = NOT_CONFIGURED;
-      live = { importW: 0, exportW: 0 };
-    } else {
-      let lastError = null;
-      for (const [index, source] of order.entries()) {
-        try {
-          if (source === SOURCES.LOCAL) {
-            await refreshLocal(config);
-          } else {
-            await refreshCloud(config, { force });
-          }
-          const degraded = index > 0;
-          transport = {
-            transport: source === SOURCES.LOCAL ? DEVICE_TRANSPORTS.LOCAL : DEVICE_TRANSPORTS.CLOUD,
-            source,
-            configured: true,
-            degraded,
-            message: degraded
-              ? t(
-                  order[0] === SOURCES.LOCAL
-                    ? 'degraded_local_fallback'
-                    : 'degraded_cloud_fallback',
-                )
-              : null,
-            error: null,
-          };
-          lastError = null;
-          state.lastUpdate = now().toISOString();
-          state.startedAt ??= state.lastUpdate;
-          break;
-        } catch (err) {
-          logger.warn(`The ${source} source failed: ${err.message}`);
-          lastError = err;
-        }
-      }
-      if (lastError) {
-        live = { importW: 0, exportW: 0 };
-        transport = {
-          ...NOT_CONFIGURED,
-          configured: true,
-          error: lastError.message.slice(0, 120),
-        };
-      }
+  /** Drop live powers a scene reported long ago: they no longer mean anything. */
+  function expireLivePowers() {
+    if (live.at !== null && now().getTime() - live.at > LIVE_POWER_TTL_MS) {
+      live = { importW: 0, exportW: 0, at: null };
     }
+  }
+
+  function setTransport(source, problem) {
+    transport = {
+      transport: problem?.unreachable ? DEVICE_TRANSPORTS.UNREACHABLE : DEVICE_TRANSPORTS.LOCAL,
+      source,
+      configured: true,
+      degraded: Boolean(problem && !problem.unreachable),
+      // Shown in the badge tooltip and in the connection status.
+      message: problem ? t(problem.key, problem.vars) : null,
+      error: problem ? problem.error : null,
+    };
+  }
+
+  /** Persist, publish and fire what the last change produced. */
+  async function commit(config, previousStock) {
     checkLowStock(previousStock, config);
     pruneCoverage(state, now().getTime());
     await persist();
@@ -376,6 +339,44 @@ export function createEngine({
     await publishTransports();
     await reportConnection();
     await fireEvents();
+  }
+
+  async function doRefresh(config) {
+    const previousStock = state.stockKwh;
+    await tariffs.refresh();
+    if (!isSourceConfigured(config)) {
+      transport = NOT_CONFIGURED;
+      live = { importW: 0, exportW: 0, at: null };
+    } else if (config.data_source === SOURCES.SHELLY) {
+      try {
+        await refreshShelly(config);
+        setTransport(SOURCES.SHELLY, null);
+        state.lastUpdate = now().toISOString();
+        state.startedAt ??= state.lastUpdate;
+      } catch (err) {
+        logger.warn(`The Shelly meter failed: ${err.message}`);
+        live = { importW: 0, exportW: 0, at: null };
+        const error = err.message.slice(0, 120);
+        setTransport(SOURCES.SHELLY, {
+          key: 'status_unreachable',
+          vars: { error },
+          error,
+          unreachable: true,
+        });
+      }
+    } else {
+      // Nothing to poll: the Gladys scene pushes the readings. Only check it
+      // still does, and switch the bookkeeping when the source just changed.
+      useSource(SOURCES.GLADYS);
+      rollDay(config);
+      expireLivePowers();
+      const problem = checkGladysSource();
+      setTransport(
+        SOURCES.GLADYS,
+        problem && { ...problem, error: t(problem.key, problem.vars).en, unreachable: false },
+      );
+    }
+    await commit(config, previousStock);
     lastRefreshAt = now().getTime();
     return { ok: transport.configured && !transport.error, error: transport.error };
   }
@@ -387,9 +388,9 @@ export function createEngine({
     },
 
     /**
-     * Read the meter and update the ledger, unless the last read is more
-     * recent than the refresh interval (`force` bypasses it, and the cloud
-     * fetch throttling too). Concurrent calls share the same run.
+     * Read the Shelly meter (or check the Gladys scene still reports) and
+     * update the ledger, unless the last run is more recent than the refresh
+     * interval (`force` bypasses it). Concurrent calls share the same run.
      */
     refresh(config, { force = false } = {}) {
       if (running) return running;
@@ -397,10 +398,81 @@ export function createEngine({
         lastRefreshAt === null ||
         now().getTime() - lastRefreshAt >= config.poll_frequency * 1000 - REFRESH_TOLERANCE_MS;
       if (!force && !due) return Promise.resolve(null);
-      running = doRefresh(config, { force }).finally(() => {
+      running = doRefresh(config).finally(() => {
         running = null;
       });
       return running;
+    },
+
+    /**
+     * Account a reading sent by a Gladys scene ("Record a meter reading"):
+     * the cumulative import and/or export indexes of the meter, and
+     * optionally its live powers. Indexes only: the ledger computes the
+     * differences itself, so sending the same reading twice counts nothing.
+     * @param {{ import_index?: unknown, export_index?: unknown, unit?: string,
+     *   import_power?: unknown, export_power?: unknown }} fields
+     * @throws {Error} when the data source is not "Gladys devices", or a
+     *   value is not a number, or no index is given
+     */
+    async recordReading(fields, config) {
+      if (config.data_source !== SOURCES.GLADYS) {
+        throw new Error(
+          'The data source of the integration is the Shelly meter, not Gladys devices',
+        );
+      }
+      const factor = UNIT_TO_WH[fields.unit] ?? UNIT_TO_WH.kwh;
+      const importIndex = parseReading(fields.import_index);
+      const exportIndex = parseReading(fields.export_index);
+      if (importIndex === null && exportIndex === null) {
+        throw new Error('No index in the reading: give the import index, the export index or both');
+      }
+      for (const index of [importIndex, exportIndex]) {
+        if (index !== null && index < 0) throw new RangeError('An index cannot be negative');
+      }
+      const importPower = parseReading(fields.import_power);
+      const exportPower = parseReading(fields.export_power);
+      const previousStock = state.stockKwh;
+      useSource(SOURCES.GLADYS);
+      const toWh = (value) => (value === null ? null : value * factor);
+      const importKwh = counterDelta(state.gladys, 'importWh', toWh(importIndex), 'import');
+      const exportKwh = counterDelta(state.gladys, 'exportWh', toWh(exportIndex), 'export');
+      // The energy flowed between the two readings: date it at the middle,
+      // within the last half-hour, for the half-hour pricing.
+      const nowMs = now().getTime();
+      const lastMs = state.gladys.lastReadingAt ? Date.parse(state.gladys.lastReadingAt) : nowMs;
+      const flowedAt = new Date(nowMs - Math.min((nowMs - lastMs) / 2, 15 * 60 * 1000));
+      const moved = account(config, {
+        importKwh: importKwh ?? 0,
+        exportKwh: exportKwh ?? 0,
+        flowedAt,
+      });
+      if (importPower !== null || exportPower !== null) {
+        live = {
+          importW: Math.max(0, importPower ?? 0),
+          exportW: Math.max(0, exportPower ?? 0),
+          at: nowMs,
+        };
+      } else {
+        expireLivePowers();
+      }
+      updateBatteryState(
+        importPower !== null || exportPower !== null
+          ? { importing: live.importW, exporting: live.exportW }
+          : { importing: importKwh ?? 0, exporting: exportKwh ?? 0 },
+      );
+      state.gladys.lastReadingAt = now().toISOString();
+      state.lastUpdate = state.gladys.lastReadingAt;
+      state.startedAt ??= state.lastUpdate;
+      setTransport(SOURCES.GLADYS, null);
+      await commit(config, previousStock);
+      return {
+        accepted: true,
+        imported_kwh: round(importKwh ?? 0, 3),
+        exported_kwh: round(exportKwh ?? 0, 3),
+        stored_kwh: round(moved.chargedKwh, 3),
+        withdrawn_kwh: round(moved.dischargedKwh, 3),
+        stock_kwh: round(state.stockKwh, 2),
+      };
     },
 
     /** Set the stock to the value shown in the Urban Solar customer area. */
@@ -457,7 +529,7 @@ export function createEngine({
     },
 
     status(config) {
-      const today = state.activeSource === SOURCES.LOCAL ? state.today : null;
+      const today = state.activeSource ? state.today : null;
       return {
         stockKwh: round(state.stockKwh, 2),
         levelPercent: levelPercent(state.stockKwh, config.capacity_kwh),
@@ -478,6 +550,11 @@ export function createEngine({
         live: { ...live },
         transport: { ...transport },
         lastUpdate: state.lastUpdate,
+        lastReading: {
+          at: state.gladys.lastReadingAt,
+          importKwh: state.gladys.importWh === null ? null : round(state.gladys.importWh / 1000, 3),
+          exportKwh: state.gladys.exportWh === null ? null : round(state.gladys.exportWh / 1000, 3),
+        },
         rates: tariffs.ratesFor(localDay(now(), config.timezone)),
       };
     },

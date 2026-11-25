@@ -4,10 +4,8 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { hasCloudSource, hasLocalSource } from './config.js';
-import { addDays, localDay } from './dates.js';
+import { DATA_SOURCES, isSourceConfigured } from './config.js';
 import { LANGUAGES, t } from './i18n.js';
-import { readDailyEnergy } from './sources/conso.js';
 import { readShelly } from './sources/shelly.js';
 
 const logger = createLogger({ name: 'actions' });
@@ -23,48 +21,55 @@ export function joinMessages(messages) {
   return result;
 }
 
-/** Test every configured source and say what each one answers. */
-export async function testConnection(config, { fetchImpl = fetch, now = () => new Date() } = {}) {
-  const messages = [];
-  if (hasLocalSource(config)) {
+/** `2026-11-25 14:05` in `timeZone`: readable in every language. */
+function formatDateTime(iso, timeZone) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+}
+
+/**
+ * Test the chosen data source: read the Shelly meter, or say what the Gladys
+ * scene sent last.
+ */
+export async function testConnection(config, { engine, fetchImpl = fetch } = {}) {
+  if (!isSourceConfigured(config)) {
+    return t('status_not_configured');
+  }
+  if (config.data_source === DATA_SOURCES.SHELLY) {
     try {
       const reading = await readShelly(config, { fetchImpl });
-      messages.push(
-        t('test_local_ok', {
-          import: kwh(reading.importWh),
-          export: kwh(reading.exportWh),
-          power: Math.round(reading.powerW),
-        }),
-      );
+      return t('test_local_ok', {
+        import: kwh(reading.importWh),
+        export: kwh(reading.exportWh),
+        power: Math.round(reading.powerW),
+      });
     } catch (err) {
       logger.warn(`Shelly test failed: ${err.message}`);
-      messages.push(t('test_failed', { source: 'Shelly', error: err.message }));
+      return t('test_failed', { source: 'Shelly', error: err.message });
     }
   }
-  if (hasCloudSource(config)) {
-    try {
-      const today = localDay(now(), config.timezone);
-      const days = await readDailyEnergy(config, {
-        from: addDays(today, -7),
-        to: today,
-        fetchImpl,
-      });
-      const last = days.at(-1);
-      messages.push(
-        last
-          ? t('test_cloud_ok', {
-              date: last.date,
-              import: kwh(last.importWh),
-              export: kwh(last.exportWh),
-            })
-          : t('test_cloud_empty'),
-      );
-    } catch (err) {
-      logger.warn(`Linky test failed: ${err.message}`);
-      messages.push(t('test_failed', { source: 'Linky', error: err.message }));
-    }
+  const { lastReading } = engine.status(config);
+  if (!lastReading.at) {
+    return t('status_waiting_reading');
   }
-  return messages.length > 0 ? joinMessages(messages) : t('status_not_configured');
+  const value = (index) => (index === null ? '–' : index.toFixed(1));
+  return t('test_gladys_ok', {
+    at: formatDateTime(lastReading.at, config.timezone),
+    import: value(lastReading.importKwh),
+    export: value(lastReading.exportKwh),
+  });
 }
 
 /**
@@ -72,7 +77,7 @@ export async function testConnection(config, { fetchImpl = fetch, now = () => ne
  * Each one receives `{ fields, config, engine }`.
  */
 export const CONFIG_ACTIONS = {
-  test_connection: ({ config }) => testConnection(config),
+  test_connection: ({ config, engine }) => testConnection(config, { engine }),
 
   async calibrate_stock({ fields, config, engine }) {
     try {

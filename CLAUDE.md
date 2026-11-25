@@ -15,10 +15,17 @@ It rebuilds the Urban Solar **virtual battery** ledger (injected energy
 credited, imported energy debited, full price once empty) from meter
 readings — Urban Solar has no public API:
 
-- `local` transport: a Shelly Gen2+ energy meter on the LAN (cumulative
-  counters, instant power);
-- `cloud` transport: the Linky daily readings through the Conso API
-  (`conso.boris.sh`, published at D+1).
+- `gladys` source (default): devices already in Gladys (energy monitoring
+  meter, Shelly or current clamp of another integration). An external
+  integration cannot read other integrations' devices, so a Gladys scene
+  reads their cumulative indexes and calls the `record_meter_reading` scene
+  action;
+- `shelly` source: a Shelly Gen2+ energy meter read directly on the LAN
+  (cumulative counters, instant power).
+
+Everything is local (`transports: ["local"]`). The Linky cloud source (Conso
+API) was removed in version 3: do not bring a cloud API back without asking;
+cloud users are pointed to the native Enedis integration of Gladys.
 
 ## Commands
 
@@ -26,7 +33,7 @@ readings — Urban Solar has no public API:
 npm install
 npm test                                  # node --test, the built-in runner
 node --test test/engine.test.js           # one file
-node --test --test-name-pattern "cloud"   # tests whose name matches
+node --test --test-name-pattern "Gladys"  # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -41,7 +48,7 @@ Docker image: run the three commands before pushing.
 index.js               SDK wiring only: handlers registered before connect(), 15 s timer
 src/engine.js          source selection + fallback, ledger updates, publication, scene triggers
 src/battery.js         pure model of the virtual battery (no I/O)
-src/sources/*.js       shelly.js (local), conso.js (cloud): readings only
+src/sources/shelly.js  Shelly RPC reader (the gladys source is pushed: engine.recordReading)
 src/devices/*.js       discovery payloads: virtual battery + grid connection
 src/actions.js         manifest `actions` handlers
 src/scenes.js          manifest `scene_actions` handlers
@@ -51,16 +58,20 @@ src/pricing.js         delegated pricing of that contract (onEnergyPrice / onEne
 src/i18n.js            every user-facing message, en/fr/de/es
 src/config.js          DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
 src/store.js           ledger persistence (/data/virtual-battery.json, atomic writes)
-test/helpers.js        fake network (Shelly + Conso), memory store, clock
+test/helpers.js        fake network (Shelly), memory store, clock
 ```
 
 ## Rules
 
-- **The ledger is the product.** Never account the same energy twice: the
-  local source works on counter deltas (a backwards counter re-baselines), the
-  cloud source on whole days strictly after `state.local.lastDay` and
-  `state.cloud.lastDay`. Changing that logic needs a test in
-  `test/engine.test.js`. Keep `restoreState` able to read older ledgers.
+- **The ledger is the product.** Never account the same energy twice: both
+  sources work on cumulative counter deltas (a backwards counter
+  re-baselines, a duplicate reading counts nothing), one source at a time, and
+  switching sources resets the new one's baseline. Changing that logic needs a
+  test in `test/engine.test.js`. Keep `restoreState` able to read older
+  ledgers (version 1: `activeSource: 'local'` is the Shelly, `cloud` dropped).
+- **Scene readings are text.** The `record_meter_reading` fields are `string`
+  (only text fields receive the `{{...}}` scene variables): parse them with
+  `parseReading` (comma decimals, unresolved variables).
 - **Prices live in the energy contract.** Never add a price to `config_schema`:
   they are inputs of the `urban-solar-virtual-battery` template, read with
   `getEnergyContracts()`, picked by date. The pricing answer must stay
@@ -80,8 +91,8 @@ test/helpers.js        fake network (Shelly + Conso), memory store, clock
   missing language.
 - **Scene events** only carry keys declared in the trigger `fields` /
   `variables`, as primitives; scene action outputs only declared keys.
-- **Secrets.** Never log the Conso token or echo an HTTP response body that
-  could contain it. The Shelly address is normalized to a host[:port] so the
+- **Secrets.** Never log a token or echo an HTTP response body that could
+  contain one. The Shelly address is normalized to a host[:port] so the
   integration never requests an arbitrary URL.
 - **The container rootfs is read-only.** Write only under `/data` (`DATA_DIR`).
 - **Versions belong to the Release workflow** (Actions → Release). Never edit

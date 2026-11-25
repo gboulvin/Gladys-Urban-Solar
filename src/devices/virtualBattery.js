@@ -18,7 +18,7 @@ const DEVICE_TYPE = 'virtual-battery';
 
 // There is one virtual battery per Urban Solar contract, and one contract per
 // integration: a fixed platform id keeps the external ids stable for ever,
-// even when the user switches between the local and the cloud source.
+// even when the user switches between the Gladys devices and the Shelly.
 const PLATFORM_ID = 'urban-solar';
 
 export const BATTERY_FEATURES = {

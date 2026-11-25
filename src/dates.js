@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
-// Calendar days in the user's time zone. Linky readings are dated by local
-// day (Europe/Paris), whereas the container clock runs in UTC: a day boundary
+// Calendar days in the user's time zone. Urban Solar accounts by local day
+// (Europe/Paris), whereas the container clock runs in UTC: a day boundary
 // computed in UTC would close the day at 1 or 2 a.m.
 // -----------------------------------------------------------------------------
 

@@ -7,6 +7,7 @@ import {
   coveragePercent,
   createInitialState,
   levelPercent,
+  parseReading,
   restoreState,
 } from '../src/battery.js';
 
@@ -67,6 +68,29 @@ test('restoreState fills the keys an older ledger did not have', () => {
   assert.equal(state.stockKwh, 42);
   assert.equal(state.local.importWh, 5);
   assert.equal(state.local.exportWh, null);
-  assert.equal(state.cloud.lastDay, null);
+  assert.equal(state.gladys.importWh, null);
   assert.equal(state.accounting, true);
+});
+
+test('restoreState migrates a version 1 ledger: local is the Shelly, cloud is dropped', () => {
+  const state = restoreState({
+    version: 1,
+    stockKwh: 12,
+    activeSource: 'local',
+    cloud: { lastDay: '2026-11-20', lastFetch: null },
+  });
+  assert.equal(state.activeSource, 'shelly');
+  assert.equal(state.cloud, undefined);
+  assert.equal(restoreState({ activeSource: 'cloud' }).activeSource, null);
+});
+
+test('parseReading reads the numbers a scene substitutes into text', () => {
+  assert.equal(parseReading('12345.6'), 12345.6);
+  assert.equal(parseReading(' 12345,6 '), 12345.6);
+  assert.equal(parseReading('1 234,5'), 1234.5);
+  assert.equal(parseReading(42), 42);
+  assert.equal(parseReading(''), null);
+  assert.equal(parseReading(undefined), null);
+  assert.equal(parseReading('{{0.0.last_value}}'), null, 'an unresolved variable is no value');
+  assert.throws(() => parseReading('abc'), RangeError);
 });

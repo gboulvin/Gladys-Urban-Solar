@@ -7,6 +7,19 @@
 // the rest of the code never deals with `undefined` or a malformed value.
 // -----------------------------------------------------------------------------
 
+// Where the meter readings come from: one source at a time, so the same
+// energy is never counted twice.
+export const DATA_SOURCES = {
+  // Devices already in Gladys (the meter of the energy monitoring, a Shelly
+  // or a current clamp of another integration...): a Gladys scene reads their
+  // values and passes them to the "Record a meter reading" scene action. An
+  // external integration cannot read the devices of other integrations
+  // itself.
+  GLADYS: 'gladys',
+  // A Shelly energy meter, read directly by the integration over the LAN.
+  SHELLY: 'shelly',
+};
+
 export const SHELLY_MODELS = {
   // Three-phase meters (Pro 3EM, 3EM Gen3): EM + EMData components.
   EM3: 'em3',
@@ -17,25 +30,17 @@ export const SHELLY_MODELS = {
 // Defaults: they MUST stay consistent with the `default` values declared in
 // the `config_schema` of the manifest (test/manifest.test.js checks it).
 export const DEFAULT_CONFIG = {
-  // Local source: a Shelly energy meter on the grid connection.
+  data_source: DATA_SOURCES.GLADYS,
+  // Shelly source: a Shelly energy meter on the grid connection.
   shelly_host: '',
   shelly_model: SHELLY_MODELS.EM3,
-  // Cloud source: the Linky daily readings, through the free Conso API.
-  prm: '',
-  conso_token: '',
   // Virtual battery. The prices are NOT here: they come from the Urban Solar
   // energy contract the user creates in Gladys (src/tariffs.js).
   capacity_kwh: 1000,
   low_stock_kwh: 10,
-  // Seconds between two reads of the local meter (the cloud readings are
-  // daily: they are fetched every few hours whatever this value).
+  // Seconds between two reads of the Shelly meter.
   poll_frequency: 60,
   timezone: 'Europe/Paris',
-  // Reserved key (NOT in config_schema): the manifest declares both 'local'
-  // and 'cloud' in its `transports` field, so Gladys shows a standard "Prefer
-  // the local connection" toggle and sends the user's choice here. When both
-  // sources are configured it picks the one used. Read-only, defaults to true.
-  GLADYS_PREFER_LOCAL: true,
 };
 
 const SHELLY_HOST_PATTERN = /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:\d{1,5})?$/;
@@ -85,14 +90,18 @@ export function normalizeConfig(raw = {}) {
   const model = Object.values(SHELLY_MODELS).includes(raw.shelly_model)
     ? raw.shelly_model
     : DEFAULT_CONFIG.shelly_model;
+  const source = Object.values(DATA_SOURCES).includes(raw.data_source)
+    ? raw.data_source
+    : DEFAULT_CONFIG.data_source;
+  // Keys of the removed Linky cloud source (version 2), still stored by older
+  // installations: dropped, so they never reach the logs or the code.
+  const { prm: _prm, conso_token: _token, GLADYS_PREFER_LOCAL: _prefer, ...rest } = raw;
   return {
     ...DEFAULT_CONFIG,
-    ...raw,
+    ...rest,
+    data_source: source,
     shelly_host: normalizeShellyHost(raw.shelly_host ?? ''),
     shelly_model: model,
-    // The PRM (point de référence mesure) is the 14-digit Linky meter number.
-    prm: String(raw.prm ?? '').replace(/\D/g, ''),
-    conso_token: typeof raw.conso_token === 'string' ? raw.conso_token.trim() : '',
     capacity_kwh: toNumber(raw.capacity_kwh, DEFAULT_CONFIG.capacity_kwh, { min: 1 }),
     low_stock_kwh: toNumber(raw.low_stock_kwh, DEFAULT_CONFIG.low_stock_kwh, { min: 0 }),
     poll_frequency: toNumber(raw.poll_frequency, DEFAULT_CONFIG.poll_frequency, {
@@ -100,31 +109,10 @@ export function normalizeConfig(raw = {}) {
       max: 3600,
     }),
     timezone: toTimezone(raw.timezone),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
   };
 }
 
-export function hasLocalSource(config) {
-  return config.shelly_host !== '';
-}
-
-export function hasCloudSource(config) {
-  return config.prm.length === 14 && config.conso_token !== '';
-}
-
-/**
- * The sources to try, in order: the preferred one first, the other one as a
- * fallback. Empty when nothing is configured.
- * @returns {Array<'local' | 'cloud'>}
- */
-export function sourceOrder(config) {
-  const local = hasLocalSource(config);
-  const cloud = hasCloudSource(config);
-  if (local && cloud) {
-    return config.GLADYS_PREFER_LOCAL ? ['local', 'cloud'] : ['cloud', 'local'];
-  }
-  if (local) return ['local'];
-  if (cloud) return ['cloud'];
-  return [];
+/** Whether the chosen source has what it needs to run. */
+export function isSourceConfigured(config) {
+  return config.data_source === DATA_SOURCES.GLADYS || config.shelly_host !== '';
 }

@@ -1,51 +1,32 @@
-// Shared test doubles: a fake network (Shelly RPC + Conso API), an in-memory
+// Shared test doubles: a fake network (Shelly RPC), an in-memory
 // ledger store and a controllable clock. Tests never touch the network.
 
 import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import { normalizeConfig } from '../src/config.js';
 import { createEngine } from '../src/engine.js';
 
-export const PRM = '12345678901234';
-
-export const LOCAL_CONFIG = normalizeConfig({ shelly_host: '192.168.1.50' });
-export const CLOUD_CONFIG = normalizeConfig({ prm: PRM, conso_token: 'token' });
-export const BOTH_CONFIG = normalizeConfig({
-  shelly_host: '192.168.1.50',
-  prm: PRM,
-  conso_token: 'token',
-});
+// The Shelly meter, read directly over the LAN.
+export const LOCAL_CONFIG = normalizeConfig({ data_source: 'shelly', shelly_host: '192.168.1.50' });
+// Gladys devices, the readings sent by a scene (the default source).
+export const GLADYS_CONFIG = normalizeConfig({});
 
 function json(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
 /**
- * A fake `fetch`. Mutate `network.shelly` / `network.conso` between calls to
- * simulate the meter; set `shellyDown` / `consoDown` to simulate an outage.
+ * A fake `fetch`. Mutate `network.shelly` between calls to simulate the
+ * meter; set `shellyDown` to simulate an outage.
  */
 export function createNetwork() {
   const network = {
     shelly: { importWh: 1000000, exportWh: 500000, powerW: 0 },
     shellyDown: false,
-    conso: { consumption: {}, production: {} },
-    consoDown: false,
     requests: [],
   };
   network.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
     network.requests.push({ url, init });
-    if (url.hostname === 'conso.boris.sh') {
-      if (network.consoDown) throw new Error('fetch failed');
-      const type = url.pathname.split('/').pop();
-      const data =
-        type === 'consommation_quotidienne' ? network.conso.consumption : network.conso.production;
-      const from = url.searchParams.get('dateDebut');
-      const to = url.searchParams.get('dateFin');
-      const interval_reading = Object.entries(data)
-        .filter(([date]) => date >= from && date < to)
-        .map(([date, value]) => ({ date, value: String(value) }));
-      return json({ reading_type: { unit: 'Wh' }, interval_reading });
-    }
     if (network.shellyDown) throw new Error('connect EHOSTUNREACH');
     const method = url.pathname.replace('/rpc/', '');
     const { importWh, exportWh, powerW } = network.shelly;

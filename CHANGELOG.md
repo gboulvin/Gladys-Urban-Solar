@@ -10,6 +10,24 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- "Gladys devices" data source, the new default: use any device already in
+  Gladys — the meter of the energy monitoring, a Shelly or a current clamp of
+  another integration. A Gladys scene reads their cumulative import and export
+  indexes and passes them to the new "Urban Solar: record a meter reading"
+  scene action (indexes in kWh or Wh, optional live powers).
+- "Data source" choice in the configuration: Gladys devices or a Shelly meter
+  read directly.
+- The Configuration screen reports a scene that has not sent a reading yet,
+  or none for 2 hours.
+
+### Removed
+
+- The Linky cloud source (Conso API) and its fields (meter number, token):
+  everything is now local. The stored token is ignored. The "Prefer the local
+  connection" toggle goes with it.
+
 ## [2.0.0] - 2026-11-23
 
 ### Added

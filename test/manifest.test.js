@@ -209,8 +209,20 @@ test('secret fields declare no default', () => {
   }
 });
 
-test('the manifest declares both transports: local Shelly and Linky cloud', () => {
-  assert.deepEqual([...manifest.transports].sort(), ['cloud', 'local']);
+test('the manifest declares the local transport only: no cloud source any more', () => {
+  assert.deepEqual(manifest.transports, ['local']);
+  const keys = keysOf(manifest.config_schema);
+  for (const key of ['prm', 'conso_token', 'cloud_section']) {
+    assert.ok(!keys.includes(key), `"${key}" belongs to the removed Linky cloud source`);
+  }
+});
+
+test('the record_meter_reading fields are text, so the scene variables reach them', () => {
+  const action = manifest.scene_actions.find((entry) => entry.key === 'record_meter_reading');
+  for (const key of ['import_index', 'export_index', 'import_power', 'export_power']) {
+    const field = action.fields.find((entry) => entry.key === key);
+    assert.equal(field.type, 'string', `${key}: only string fields accept {{...}} variables`);
+  }
 });
 
 test('the scene and widget keys respect the store patterns', () => {

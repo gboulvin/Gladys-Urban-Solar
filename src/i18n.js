@@ -25,16 +25,22 @@ export const MESSAGES = {
 
   // --- Data sources ---------------------------------------------------------
   source_local: {
-    en: 'Local (Shelly)',
-    fr: 'Locale (Shelly)',
-    de: 'Lokal (Shelly)',
-    es: 'Local (Shelly)',
+    en: 'Shelly meter (local)',
+    fr: 'Compteur Shelly (local)',
+    de: 'Shelly-Zähler (lokal)',
+    es: 'Medidor Shelly (local)',
   },
-  source_cloud: {
-    en: 'Cloud (Linky)',
-    fr: 'Cloud (Linky)',
-    de: 'Cloud (Linky)',
-    es: 'Nube (Linky)',
+  source_gladys: {
+    en: 'Gladys devices',
+    fr: 'Appareils Gladys',
+    de: 'Gladys-Geräte',
+    es: 'Dispositivos Gladys',
+  },
+  source_waiting: {
+    en: 'Waiting for a reading',
+    fr: "En attente d'un relevé",
+    de: 'Warte auf Messwert',
+    es: 'Esperando una lectura',
   },
   source_none: {
     en: 'Not configured',
@@ -51,10 +57,22 @@ export const MESSAGES = {
 
   // --- Connection status ----------------------------------------------------
   status_not_configured: {
-    en: 'No data source: fill in the Shelly address or the Linky token and meter number.',
-    fr: 'Aucune source de données : renseignez l’adresse du Shelly ou le jeton et le numéro du compteur Linky.',
-    de: 'Keine Datenquelle: Geben Sie die Shelly-Adresse oder das Linky-Token und die Zählernummer ein.',
-    es: 'Sin fuente de datos: indique la dirección del Shelly o el token y el número del contador Linky.',
+    en: 'The Shelly meter is the chosen data source, but its address is missing.',
+    fr: "Le compteur Shelly est la source de données choisie, mais son adresse n'est pas renseignée.",
+    de: 'Der Shelly-Zähler ist als Datenquelle gewählt, aber seine Adresse fehlt.',
+    es: 'El medidor Shelly es la fuente de datos elegida, pero falta su dirección.',
+  },
+  status_waiting_reading: {
+    en: 'Waiting for the first meter reading: create the Gladys scene that sends it (see the documentation).',
+    fr: 'En attente du premier relevé du compteur : créez la scène Gladys qui l’envoie (voir la documentation).',
+    de: 'Warte auf den ersten Zählerstand: Legen Sie die Gladys-Szene an, die ihn sendet (siehe Dokumentation).',
+    es: 'Esperando la primera lectura del contador: cree la escena de Gladys que la envía (ver la documentación).',
+  },
+  status_stale_reading: {
+    en: 'No meter reading received for {minutes} minutes: check the Gladys scene and its devices.',
+    fr: 'Aucun relevé du compteur reçu depuis {minutes} minutes : vérifiez la scène Gladys et ses appareils.',
+    de: 'Seit {minutes} Minuten kein Zählerstand empfangen: Prüfen Sie die Gladys-Szene und ihre Geräte.',
+    es: 'No se ha recibido ninguna lectura desde hace {minutes} minutos: revise la escena de Gladys y sus dispositivos.',
   },
   status_unreachable: {
     en: 'The data source does not answer: {error}',
@@ -70,18 +88,6 @@ export const MESSAGES = {
   },
 
   // --- Degraded transports --------------------------------------------------
-  degraded_local_fallback: {
-    en: 'Shelly unreachable, using the Linky cloud data instead.',
-    fr: 'Shelly injoignable, utilisation des données cloud Linky.',
-    de: 'Shelly nicht erreichbar, es werden die Linky-Clouddaten verwendet.',
-    es: 'Shelly inaccesible, se usan los datos en la nube de Linky.',
-  },
-  degraded_cloud_fallback: {
-    en: 'Linky cloud unreachable, using the local Shelly meter instead.',
-    fr: 'Cloud Linky injoignable, utilisation du compteur Shelly local.',
-    de: 'Linky-Cloud nicht erreichbar, es wird der lokale Shelly-Zähler verwendet.',
-    es: 'Nube Linky inaccesible, se usa el medidor Shelly local.',
-  },
 
   // --- Configuration screen actions -----------------------------------------
   test_local_ok: {
@@ -90,17 +96,11 @@ export const MESSAGES = {
     de: 'Shelly OK: Bezug {import} kWh, Einspeisung {export} kWh, aktuell {power} W.',
     es: 'Shelly OK: consumo {import} kWh, inyección {export} kWh, {power} W ahora.',
   },
-  test_cloud_ok: {
-    en: 'Linky OK: on {date}, import {import} kWh, export {export} kWh.',
-    fr: 'Linky OK : le {date}, soutirage {import} kWh, injection {export} kWh.',
-    de: 'Linky OK: am {date} Bezug {import} kWh, Einspeisung {export} kWh.',
-    es: 'Linky OK: el {date}, consumo {import} kWh, inyección {export} kWh.',
-  },
-  test_cloud_empty: {
-    en: 'Linky OK, but no daily reading yet for the last days.',
-    fr: 'Linky OK, mais aucun relevé quotidien pour les derniers jours.',
-    de: 'Linky OK, aber noch keine Tageswerte für die letzten Tage.',
-    es: 'Linky OK, pero aún no hay lecturas diarias de los últimos días.',
+  test_gladys_ok: {
+    en: 'Last reading received {at}: import index {import} kWh, export index {export} kWh.',
+    fr: 'Dernier relevé reçu le {at} : index soutirage {import} kWh, index injection {export} kWh.',
+    de: 'Letzter Messwert vom {at}: Bezugsstand {import} kWh, Einspeisestand {export} kWh.',
+    es: 'Última lectura recibida el {at}: índice de consumo {import} kWh, índice de inyección {export} kWh.',
   },
   test_failed: {
     en: '{source}: failed ({error}).',

@@ -16,7 +16,7 @@ Include, when you can:
 
 - the version of the integration and of Gladys;
 - what an attacker can do, and the steps to reproduce it;
-- the log lines that help (remove tokens, meter numbers (PRM), passwords and
+- the log lines that help (remove tokens, meter numbers, passwords and
   addresses first).
 
 The fix ships as a new version of the integration, and the advisory is
@@ -29,12 +29,10 @@ Gladys before reporting a problem.
 
 ## Sensitive data handled
 
-- The **Conso API token** is stored by Gladys as a `secret` configuration
-  field (never sent back to the browser). The integration only sends it to
-  `conso.boris.sh`, never logs it, and never echoes an API response body.
-- The **Linky meter number (PRM)** and the energy readings are personal
-  data: they only leave the home to query the Conso API, when the cloud
-  source is configured.
+- The **energy readings** are personal data: they never leave the home. The
+  integration uses no cloud service; it receives the readings from a Gladys
+  scene or reads a Shelly meter on the local network. A Conso API token
+  stored by version 2 is ignored and never logged.
 - The **Shelly address** is normalized to a host name or IP address with an
   optional port: the integration never requests an arbitrary URL. The local
   Shelly API is queried in plain HTTP on the LAN.
@@ -48,4 +46,4 @@ In scope: the code of this repository and the Docker image it publishes.
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
 and the third-party services and devices the integration talks to (Urban
-Solar, Enedis, the Conso API, Shelly devices).
+Solar, Enedis, Shelly devices).

@@ -10,13 +10,7 @@ import {
   refreshWidgets,
 } from '../src/widgets.js';
 import { LANGUAGES } from '../src/i18n.js';
-import {
-  BOTH_CONFIG,
-  CLOUD_CONFIG,
-  LOCAL_CONFIG,
-  createTestEngine,
-  urbanSolarContract,
-} from './helpers.js';
+import { GLADYS_CONFIG, LOCAL_CONFIG, createTestEngine, urbanSolarContract } from './helpers.js';
 
 const getContent = (key, gladys, engine, config, settings = {}) =>
   WIDGETS[key].get(gladys, { settings, language: 'fr', units: 'metric', config, engine });
@@ -38,14 +32,19 @@ test('every widget content is rendered exactly as sent, in every situation', asy
   const situations = [
     ['never refreshed', LOCAL_CONFIG, () => {}],
     ['local', LOCAL_CONFIG, () => engine.refresh(LOCAL_CONFIG, { force: true })],
-    ['cloud', CLOUD_CONFIG, () => engine.refresh(CLOUD_CONFIG, { force: true })],
     [
-      'degraded',
-      BOTH_CONFIG,
+      'shelly unreachable',
+      LOCAL_CONFIG,
       () => {
         network.shellyDown = true;
-        return engine.refresh(BOTH_CONFIG, { force: true });
+        return engine.refresh(LOCAL_CONFIG, { force: true });
       },
+    ],
+    ['gladys waiting', GLADYS_CONFIG, () => engine.refresh(GLADYS_CONFIG, { force: true })],
+    [
+      'gladys reading',
+      GLADYS_CONFIG,
+      () => engine.recordReading({ import_index: '10', export_power: '900' }, GLADYS_CONFIG),
     ],
     ['paused', LOCAL_CONFIG, () => engine.setAccounting(false, LOCAL_CONFIG)],
   ];

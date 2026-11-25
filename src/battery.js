@@ -8,7 +8,7 @@
 // withdrawn from the stock still pays a withdrawal fee (grid transport and
 // taxes), so the saving of a withdrawn kWh is `grid_price - discharge_fee`.
 //
-// Within one interval (a local meter read, or one Linky day) the injected
+// Within one interval (between two meter readings) the injected
 // energy is stored first, then the imported energy is withdrawn from the
 // stock. No I/O here: src/engine.js feeds the readings and persists the state.
 // -----------------------------------------------------------------------------
@@ -24,7 +24,7 @@ export const BATTERY_STATES = {
 // land exactly on zero.
 const EMPTY_EPSILON_KWH = 0.001;
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 export function createInitialState() {
   return {
@@ -43,10 +43,12 @@ export function createInitialState() {
     day: null,
     today: emptyDay(),
     lastDay: null,
-    // Source bookkeeping.
+    // Source bookkeeping: the last counters seen, the baseline of the next
+    // difference. `local` is the Shelly meter (key kept from version 1),
+    // `gladys` the readings a Gladys scene sends.
     activeSource: null,
-    local: { importWh: null, exportWh: null, lastDay: null },
-    cloud: { lastDay: null, lastFetch: null },
+    local: { importWh: null, exportWh: null },
+    gladys: { importWh: null, exportWh: null, lastReadingAt: null },
     lastUpdate: null,
     // When the ledger started counting: Gladys asks the integration to price
     // the energy of the Urban Solar contract, and what came before is billed
@@ -71,12 +73,21 @@ export function restoreState(saved) {
   if (!saved || typeof saved !== 'object') {
     return initial;
   }
+  // Version 1: 'local' was the Shelly meter, 'cloud' the removed Linky
+  // source (its bookkeeping is dropped).
+  const { cloud: _cloud, ...kept } = saved;
+  const MIGRATED_SOURCES = { local: 'shelly', cloud: null };
+  const activeSource =
+    saved.activeSource in MIGRATED_SOURCES
+      ? MIGRATED_SOURCES[saved.activeSource]
+      : saved.activeSource;
   return {
     ...initial,
-    ...saved,
+    ...kept,
+    activeSource: activeSource ?? null,
     today: { ...initial.today, ...saved.today },
     local: { ...initial.local, ...saved.local },
-    cloud: { ...initial.cloud, ...saved.cloud },
+    gladys: { ...initial.gladys, ...saved.gladys },
     slots: { ...saved.slots },
     days: { ...saved.days },
     version: STATE_VERSION,
@@ -165,7 +176,7 @@ export function addToDay(day, moved) {
 
 /**
  * State of the battery given the flows of the last interval (instant powers
- * from the local meter, or the energies of the last Linky day).
+ * reported with the readings, or the energies of the last interval).
  */
 export function batteryStateOf(stockKwh, { importing, exporting }) {
   if (exporting > importing && exporting > 0) {
@@ -196,4 +207,23 @@ export function coveragePercent(state) {
 export function round(value, decimals = 3) {
   const factor = 10 ** decimals;
   return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+/**
+ * A number typed in a scene field: the core substitutes the scene variables
+ * ({{...}}) into text, so `"12345.6"`, `"12345,6"` or an empty string arrive
+ * here. `null` when there is nothing usable (empty, unresolved variable).
+ * @throws {RangeError} a value that is there but is not a number
+ */
+export function parseReading(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new RangeError(`Not a number: ${value}`);
+    return value;
+  }
+  const text = String(value).trim().replace(/\s/g, '').replace(',', '.');
+  if (text === '' || text === 'null' || text === 'undefined' || text.includes('{{')) return null;
+  const number = Number(text);
+  if (!Number.isFinite(number)) throw new RangeError(`Not a number: ${String(value).slice(0, 40)}`);
+  return number;
 }

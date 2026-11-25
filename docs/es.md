@@ -13,47 +13,70 @@ la energía se factura al precio pleno de la red. Cada kWh retirado sigue
 pagando una tarifa de retirada (transporte, impuestos).
 
 Urban Solar no ofrece una API pública, así que la integración reconstruye esa
-cuenta a partir de las lecturas de su contador, con una o ambas fuentes:
+cuenta a partir de los **índices acumulados** de su contador (consumo e
+inyección), con una de estas dos fuentes, a elegir en la configuración:
 
-- **Local — medidor Shelly**: un Shelly Pro 3EM, 3EM Gen3, Pro EM o EM Gen3
-  en la acometida, leído por su red local en cada intervalo. Potencias en
-  directo, sin nube, sin pérdidas durante un corte (el medidor guarda
-  contadores acumulados).
-- **Nube — lecturas Linky**: las lecturas diarias de su contador Linky,
-  publicadas por Enedis al día siguiente, mediante la
-  [API Conso](https://conso.boris.sh/) gratuita. Solo cifras diarias.
+- **Dispositivos Gladys** (por defecto): cualquier dispositivo ya presente en
+  Gladys que mida la energía consumida e inyectada — el contador creado por
+  el **seguimiento energético**, un Shelly o una pinza amperimétrica de otra
+  integración… Una escena de Gladys lee sus índices y los pasa a la
+  integración (ver más abajo).
+- **Medidor Shelly**: un Shelly Pro 3EM, 3EM Gen3, Pro EM o EM Gen3 en la
+  acometida, leído directamente por la integración por su red local.
+  Potencias en directo, sin escena que crear.
 
-Con ambas, el interruptor **Preferir la conexión local** de la pantalla de
-configuración elige la fuente preferida; la otra toma el relevo si falla, y
-los dispositivos muestran entonces un punto naranja en su indicador de
-transporte. Un día contabilizado por el Shelly, aunque sea en parte, nunca se
-vuelve a contar desde las lecturas Linky.
+En ambos casos, la integración calcula ella misma la diferencia entre dos
+lecturas: una lectura perdida, un reinicio o un corte no pierden nada. Todo
+queda en local: no se usa ningún servicio en la nube.
 
 ## Requisitos
 
 - Gladys Assistant 5.2 o posterior.
-- Para la fuente local: un medidor de energía Shelly (Gen2 o posterior) en
-  la acometida, accesible desde el equipo de Gladys, **sin autenticación** en
-  su API local. Asígnele una IP fija en su router.
-- Para la fuente en la nube: el número de 14 dígitos de su contador Linky
-  (PRM, en su factura) y un token de Conso API, creado en
-  <https://conso.boris.sh/> con su cuenta Enedis. La producción debe medirse
-  en el mismo PRM.
+- Fuente «Dispositivos Gladys»: uno o dos dispositivos con un **índice
+  acumulado** (en kWh o Wh) de la energía consumida y de la inyectada. Una
+  potencia (W) o un consumo diario no sirven.
+- Fuente «Medidor Shelly»: un medidor de energía Shelly (Gen2 o posterior)
+  en la acometida, accesible desde el equipo de Gladys, **sin autenticación**
+  en su API local. Asígnele una IP fija en su router.
 
 ## Configuración
 
 1. Abra la pestaña **Configuración** de la integración.
-2. Indique la **dirección del Shelly** (y su modelo), el **número y el token
-   del contador Linky**, o ambos.
+2. Elija la **fuente de datos**. Para el Shelly, indique también su dirección
+   y su modelo.
 3. Cree su **contrato de energía** en Gladys (ver más abajo): los precios se
    introducen allí, una sola vez, no en la integración.
-4. Si lo desea, ajuste la **capacidad de referencia** (el saldo mostrado como
-   100 %), el **umbral de alerta** y el **intervalo de actualización**.
-5. Guarde y pulse **Probar las fuentes de datos**: la respuesta de cada
-   fuente aparece bajo el botón.
-6. Pulse **Ajustar saldo** e introduzca el saldo que muestra su área de
+4. Si lo desea, ajuste la **capacidad de referencia**, el **umbral de
+   alerta** y el **intervalo de actualización**.
+5. Guarde. Con la fuente «Dispositivos Gladys», cree la escena de lectura
+   descrita más abajo.
+6. Pulse **Probar las fuentes de datos**: la lectura del Shelly, o la última
+   lectura enviada por la escena, aparece bajo el botón.
+7. Pulse **Ajustar saldo** e introduzca el saldo que muestra su área de
    cliente Urban Solar.
-7. Añada los dos dispositivos desde la pestaña **Descubrimiento**.
+8. Añada los dos dispositivos desde la pestaña **Descubrimiento**.
+
+## La escena de lectura (fuente «Dispositivos Gladys»)
+
+Una integración externa no puede leer por sí misma los dispositivos de otras
+integraciones: una escena de Gladys le pasa sus valores.
+
+1. Cree una escena que se active **cada 5 minutos** (disparador programado).
+2. Añada la acción **«Obtener el último valor de un dispositivo»** sobre la
+   función que da el **índice de consumo** (por ejemplo el contador del
+   seguimiento energético).
+3. Añada la misma acción sobre la función que da el **índice de inyección**
+   (el mismo contador u otro dispositivo: Shelly, pinza…).
+4. Añada la acción **«Urban Solar: registrar una lectura del contador»** y
+   rellene sus campos con las variables que propone el editor de escenas para
+   esos dos valores (por ejemplo `{{0.0.last_value}}` y
+   `{{0.1.last_value}}`). Elija la **unidad**: kWh o Wh.
+5. Opcional: indique también las **potencias consumida e inyectada** (W) para
+   los valores en directo.
+
+Enviar dos veces la misma lectura no cuenta nada; un índice que retrocede
+(contador sustituido) simplemente vuelve a empezar. Sin lecturas durante 2
+horas, la pantalla de configuración lo indica.
 
 ## Contrato de energía
 
@@ -88,7 +111,8 @@ Disparadores: **Cambio de estado de la batería virtual** (variables `state`,
 `charged_kwh`, `discharged_kwh`, `grid_import_kwh`, `stock_kwh`,
 `savings_eur`).
 
-Acciones: **Leer la batería virtual** (saldo, nivel, estado, ahorro, cifras
+Acciones: **Urban Solar: registrar una lectura del contador** (ver la escena
+de lectura), **Leer la batería virtual** (saldo, nivel, estado, ahorro, cifras
 del día y potencias en directo para las acciones siguientes), **Actualizar la
 batería virtual**, **Ajustar el saldo de la batería virtual**, **Pausar o
 reanudar la contabilización**.
@@ -107,8 +131,11 @@ reanudar la contabilización**.
 - _«La fuente de datos no responde»_: compruebe que el Shelly responde en
   `http://<dirección>/rpc/EMData.GetStatus?id=0` (trifásico) o
   `/rpc/EM1Data.GetStatus?id=0` (monofásico) y que el modelo es el correcto.
-- _Linky HTTP 401/403_: el token de Conso API no es válido o ha caducado.
-- Las cifras de la nube aparecen al día siguiente.
+- _«Esperando la primera lectura»_ o _«No se ha recibido ninguna lectura
+  desde hace…»_: compruebe que la escena de lectura está activa y se ejecuta,
+  y que sus variables apuntan a los valores correctos.
+- Las lecturas en la nube del Linky (API Conso) ya no se admiten desde la
+  versión 3.
 - Si el saldo se desvía del de Urban Solar, use de nuevo **Ajustar saldo**:
   las cifras de Urban Solar son las que valen.
 - Inicie la integración con `LOG_LEVEL=debug` y revise sus registros.

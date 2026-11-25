@@ -6,7 +6,7 @@
 //     refresh now, and set the stock to the value of the Urban Solar
 //     customer area (a button opening a one-field form).
 //   energy_balance  — the energy stored and withdrawn today (or on the last
-//     Linky day), the totals, the share of the import the battery covered,
+//     closed day), the totals, the share of the import the battery covered,
 //     and a button to pause / resume the accounting.
 //
 // The content is declarative: the core renders it with its own theme, dark
@@ -63,13 +63,15 @@ function sourceRow(transport) {
   if (!transport.configured) {
     return { value: t('source_none'), color: WIDGET_COLORS.WARNING };
   }
-  if (transport.error || !transport.source) {
+  if (transport.transport === 'unreachable') {
     return { value: t('source_unreachable'), color: WIDGET_COLORS.DANGER };
   }
-  return {
-    value: t(transport.source === 'local' ? 'source_local' : 'source_cloud'),
-    color: transport.degraded ? WIDGET_COLORS.WARNING : WIDGET_COLORS.SUCCESS,
-  };
+  const name = t(transport.source === 'shelly' ? 'source_local' : 'source_gladys');
+  if (transport.error) {
+    // The Gladys scene has not reported (yet, or for a while).
+    return { value: t('source_waiting'), color: WIDGET_COLORS.WARNING };
+  }
+  return { value: name, color: WIDGET_COLORS.SUCCESS };
 }
 
 // The prices of the Urban Solar contract in force: withdrawal fee / grid.

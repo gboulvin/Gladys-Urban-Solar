@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { SCENE_ACTIONS } from '../src/scenes.js';
-import { LOCAL_CONFIG, createTestEngine } from './helpers.js';
+import { GLADYS_CONFIG, LOCAL_CONFIG, createTestEngine } from './helpers.js';
 
 const manifest = JSON.parse(
   await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
@@ -62,4 +62,16 @@ test('set_accounting pauses and resumes the accounting', async () => {
     await SCENE_ACTIONS.set_accounting({ fields: { enabled: true }, config: LOCAL_CONFIG, engine }),
     { accounting: true },
   );
+});
+
+test('record_meter_reading returns every declared output', async () => {
+  const { engine } = await createTestEngine();
+  const outputs = await SCENE_ACTIONS.record_meter_reading({
+    fields: { import_index: '1500.2', export_index: '900', unit: 'kwh' },
+    config: GLADYS_CONFIG,
+    engine,
+  });
+  assertDeclared('record_meter_reading', outputs);
+  assert.deepEqual(Object.keys(outputs).sort(), declaredOutputs('record_meter_reading').sort());
+  assert.equal(outputs.accepted, true);
 });

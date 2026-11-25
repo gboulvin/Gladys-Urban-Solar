@@ -10,8 +10,7 @@ import {
 } from '../src/devices/index.js';
 import { SCENE_TRIGGERS } from '../src/engine.js';
 import {
-  BOTH_CONFIG,
-  CLOUD_CONFIG,
+  GLADYS_CONFIG,
   LOCAL_CONFIG,
   createClock,
   createMemoryStore,
@@ -116,89 +115,111 @@ test('counters going backwards (meter replaced) start over without a negative de
   assert.equal(engine.status(LOCAL_CONFIG).stockKwh, 49);
 });
 
-test('the cloud source accounts one Linky day at a time, and only once', async () => {
-  const { gladys, network, engine, clock } = await createTestEngine();
-  network.conso = {
-    consumption: { '2026-06-14': 6000 },
-    production: { '2026-06-14': 15000 },
-  };
-  await engine.calibrate(20, CLOUD_CONFIG);
-  await engine.refresh(CLOUD_CONFIG);
-  let status = engine.status(CLOUD_CONFIG);
-  assert.equal(status.stockKwh, 29);
-  assert.equal(status.transport.transport, 'cloud');
-  assert.equal(status.lastDay.date, '2026-06-14');
-  assert.equal(eventsOf(gladys, SCENE_TRIGGERS.DAILY_SUMMARY).length, 1);
+test('the Gladys source accounts the indexes a scene sends', async () => {
+  const { gladys, engine, clock } = await createTestEngine();
+  await engine.calibrate(100, GLADYS_CONFIG);
+  const first = await engine.recordReading(
+    { import_index: '12000.5', export_index: '8000', unit: 'kwh' },
+    GLADYS_CONFIG,
+  );
+  assert.deepEqual(first, {
+    accepted: true,
+    imported_kwh: 0,
+    exported_kwh: 0,
+    stored_kwh: 0,
+    withdrawn_kwh: 0,
+    stock_kwh: 100,
+  });
 
-  // An hour later: not due yet (the readings are daily).
-  clock.advance(60 * 60 * 1000);
-  const requests = network.requests.length;
-  await engine.refresh(CLOUD_CONFIG);
-  assert.equal(network.requests.length, requests);
-
-  // The next day: the new reading only.
-  network.conso.consumption['2026-06-15'] = 30000;
-  network.conso.production['2026-06-15'] = 1000;
-  clock.advance(24 * 60 * 60 * 1000);
-  await engine.refresh(CLOUD_CONFIG);
-  status = engine.status(CLOUD_CONFIG);
-  assert.equal(status.stockKwh, 0);
-  assert.equal(status.dischargedKwh, 36);
-  assert.equal(status.uncoveredKwh, 0);
-  assert.equal(status.lastDay.uncoveredKwh, 0);
+  clock.advance(5 * 60000);
+  const second = await engine.recordReading(
+    { import_index: '12001,5', export_index: '8003', unit: 'kwh', export_power: '2400' },
+    GLADYS_CONFIG,
+  );
+  assert.equal(second.imported_kwh, 1);
+  assert.equal(second.exported_kwh, 3);
+  assert.equal(second.stock_kwh, 102);
+  const status = engine.status(GLADYS_CONFIG);
+  assert.equal(status.transport.source, 'gladys');
+  assert.equal(status.transport.transport, 'local');
+  assert.equal(status.state, 'charging');
+  assert.equal(stockOf(gladys), 102);
+  assert.equal(gladys.fake.lastState(gridFeatureId(gladys, GRID_FEATURES.EXPORT_POWER)), 2400);
+  assert.equal(gladys.fake.connectionStatus.connected, true);
 });
 
-test('the cloud source waits for a missing recent day instead of skipping it', async () => {
-  const clock = createClock('2026-06-15T10:00:00Z');
-  const store = createMemoryStore();
-  const first = await createTestEngine({ clock, store });
-  first.network.conso = { consumption: { '2026-06-14': 1000 }, production: { '2026-06-14': 2000 } };
-  await first.engine.refresh(CLOUD_CONFIG);
-
-  clock.set('2026-06-18T10:00:00Z');
-  const { network, engine } = await createTestEngine({ clock, store });
-  network.conso = {
-    consumption: { '2026-06-16': 1000, '2026-06-17': 1000 },
-    production: { '2026-06-16': 5000, '2026-06-17': 5000 },
-  };
-  await engine.refresh(CLOUD_CONFIG);
-  assert.equal(engine.status(CLOUD_CONFIG).lastDay.date, '2026-06-14', '06-15 is still missing');
-});
-
-test('a failing preferred source falls back to the other one, flagged degraded', async () => {
-  const { gladys, network, engine } = await createTestEngine();
-  network.shellyDown = true;
-  network.conso = { consumption: { '2026-06-14': 1000 }, production: { '2026-06-14': 3000 } };
-  await engine.refresh(BOTH_CONFIG);
-  const { transport } = engine.status(BOTH_CONFIG);
-  assert.equal(transport.transport, 'cloud');
-  assert.equal(transport.degraded, true);
-  assert.ok(transport.message.fr);
-  const entry = gladys.fake.transports.at(-1);
-  assert.equal(entry.transport, 'cloud');
-  assert.equal(entry.degraded, true);
-});
-
-test('a day accounted by the local meter is never accounted again from the cloud', async () => {
-  const { network, engine, clock } = await createTestEngine();
-  await engine.refresh(BOTH_CONFIG); // local baseline, 2026-06-15
-  network.shelly.exportWh += 2000;
+test('the same reading sent twice counts nothing, and Wh indexes are converted', async () => {
+  const { engine, clock } = await createTestEngine();
+  await engine.calibrate(10, GLADYS_CONFIG);
+  const reading = { import_index: '5000000', unit: 'wh' };
+  await engine.recordReading(reading, GLADYS_CONFIG);
   clock.advance(60000);
-  await engine.refresh(BOTH_CONFIG);
-  assert.equal(engine.status(BOTH_CONFIG).stockKwh, 2);
-
-  // The next day the Shelly goes down: the 15th is published in the cloud.
-  network.shellyDown = true;
-  network.conso = { consumption: { '2026-06-15': 0 }, production: { '2026-06-15': 9000 } };
-  clock.advance(24 * 60 * 60 * 1000);
-  await engine.refresh(BOTH_CONFIG);
-  assert.equal(engine.status(BOTH_CONFIG).transport.source, 'cloud');
-  assert.equal(engine.status(BOTH_CONFIG).stockKwh, 2, 'the 15th is not counted twice');
+  await engine.recordReading({ import_index: '5002000', unit: 'wh' }, GLADYS_CONFIG);
+  clock.advance(60000);
+  const again = await engine.recordReading({ import_index: '5002000', unit: 'wh' }, GLADYS_CONFIG);
+  assert.equal(again.imported_kwh, 0);
+  assert.equal(engine.status(GLADYS_CONFIG).stockKwh, 8);
 });
 
-test('without any source the integration reports it is not configured', async () => {
+test('the import and the export may come from different devices, in separate readings', async () => {
+  const { engine, clock } = await createTestEngine();
+  await engine.recordReading({ import_index: '100' }, GLADYS_CONFIG);
+  await engine.recordReading({ export_index: '50' }, GLADYS_CONFIG);
+  clock.advance(60000);
+  await engine.recordReading({ export_index: '56' }, GLADYS_CONFIG);
+  await engine.recordReading({ import_index: '102' }, GLADYS_CONFIG);
+  assert.equal(engine.status(GLADYS_CONFIG).stockKwh, 4);
+});
+
+test('a reading is refused when it carries no index, a bad number, or the source is the Shelly', async () => {
+  const { engine } = await createTestEngine();
+  await assert.rejects(engine.recordReading({ import_index: '' }, GLADYS_CONFIG), /No index/);
+  await assert.rejects(
+    engine.recordReading({ import_index: '{{0.0.last_value}}' }, GLADYS_CONFIG),
+    /No index/,
+  );
+  await assert.rejects(engine.recordReading({ import_index: 'abc' }, GLADYS_CONFIG), RangeError);
+  await assert.rejects(engine.recordReading({ import_index: '-3' }, GLADYS_CONFIG), RangeError);
+  await assert.rejects(engine.recordReading({ import_index: '1' }, LOCAL_CONFIG), /Shelly/);
+});
+
+test('the Gladys source reports a scene that has not sent anything, or stopped', async () => {
+  const { gladys, engine, clock } = await createTestEngine();
+  let result = await engine.refresh(GLADYS_CONFIG);
+  assert.equal(result.ok, false);
+  assert.equal(gladys.fake.connectionStatus.connected, false);
+  assert.match(gladys.fake.connectionStatus.message.fr, /premier relevé/);
+
+  await engine.recordReading({ import_index: '1' }, GLADYS_CONFIG);
+  assert.equal(gladys.fake.connectionStatus.connected, true);
+
+  clock.advance(3 * 60 * 60 * 1000);
+  result = await engine.refresh(GLADYS_CONFIG);
+  assert.equal(result.ok, false);
+  assert.match(gladys.fake.connectionStatus.message.en, /180 minutes/);
+  assert.equal(engine.status(GLADYS_CONFIG).transport.degraded, true);
+  assert.equal(gladys.fake.transports.at(-1).degraded, true);
+});
+
+test('switching sources starts over from the next reading of the new one', async () => {
+  const { network, engine, clock } = await createTestEngine();
+  await engine.calibrate(50, GLADYS_CONFIG);
+  await engine.recordReading({ import_index: '100' }, GLADYS_CONFIG);
+  await engine.refresh(LOCAL_CONFIG, { force: true }); // Shelly baseline
+  network.shelly.importWh += 2000;
+  clock.advance(60000);
+  await engine.refresh(LOCAL_CONFIG, { force: true });
+  assert.equal(engine.status(LOCAL_CONFIG).stockKwh, 48);
+  // Back to the scene: its previous index is no baseline any more.
+  await engine.recordReading({ import_index: '130' }, GLADYS_CONFIG);
+  assert.equal(engine.status(GLADYS_CONFIG).stockKwh, 48, 'the gap is not counted twice');
+  await engine.recordReading({ import_index: '131' }, GLADYS_CONFIG);
+  assert.equal(engine.status(GLADYS_CONFIG).stockKwh, 47);
+});
+
+test('the Shelly source without an address reports it is not configured', async () => {
   const { gladys, engine } = await createTestEngine();
-  const result = await engine.refresh(normalizeConfig());
+  const result = await engine.refresh(normalizeConfig({ data_source: 'shelly' }));
   assert.equal(result.ok, false);
   assert.equal(gladys.fake.connectionStatus.connected, false);
 });

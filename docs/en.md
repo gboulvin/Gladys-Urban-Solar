@@ -13,47 +13,76 @@ the stock is empty, the energy is billed at the full grid price. Each kWh
 taken from the stock still pays a withdrawal fee (grid transport, taxes).
 
 Urban Solar offers no public API, so the integration rebuilds that ledger
-from the readings of your meter, with one or both of these sources:
+from the **cumulative indexes** of your meter (import and export), with one of
+these two sources, chosen in the configuration:
 
-- **Local — Shelly meter**: a Shelly Pro 3EM, 3EM Gen3, Pro EM or EM Gen3
-  clamped on the grid connection, read over your local network every
-  refresh interval. Live powers, no cloud, nothing lost during an outage
-  (the meter keeps cumulative counters).
-- **Cloud — Linky readings**: the daily readings of your Linky meter,
-  published by Enedis the next day, through the free
-  [Conso API](https://conso.boris.sh/). Daily figures only, no live power.
+- **Gladys devices** (default): any device already in Gladys that measures
+  the imported and exported energy — the meter created by the **energy
+  monitoring**, a Shelly or a current clamp of another integration… A Gladys
+  scene reads their indexes and passes them to the integration (see below).
+- **Shelly meter**: a Shelly Pro 3EM, 3EM Gen3, Pro EM or EM Gen3 clamped on
+  the grid connection, read directly by the integration over your local
+  network. Live powers, no scene to create.
 
-With both, the **Prefer the local connection** toggle of the Configuration
-screen picks the preferred source; the other one takes over when it fails,
-and the devices then show an orange dot on their transport badge. A day the
-Shelly meter accounted, even partly, is never counted again from the Linky
-readings.
+Either way, the integration computes the difference between two readings
+itself: a missed reading, a restart or an outage loses nothing, the next
+reading accounts for the whole gap. Everything stays local: no cloud service
+is used.
 
 ## Prerequisites
 
 - Gladys Assistant 5.2 or later.
-- For the local source: a Shelly energy meter (Gen2 or later) on the grid
-  connection, reachable from the Gladys host, **without authentication**
-  on its local API. Give it a fixed IP address in your router.
-- For the cloud source: your 14-digit Linky meter number (PRM, on your
-  bill) and a Conso API token, created on <https://conso.boris.sh/> with
-  your Enedis account. Your production must be measured on the same PRM
-  (the usual "autoconsommation avec vente du surplus" setup).
+- "Gladys devices" source: one or two devices exposing a **cumulative
+  index** (in kWh or Wh) of the imported and of the exported energy. A power
+  (W) or a daily consumption will not do.
+- "Shelly meter" source: a Shelly energy meter (Gen2 or later) on the grid
+  connection, reachable from the Gladys host, **without authentication** on
+  its local API. Give it a fixed IP address in your router.
 
 ## Configuration
 
 1. Open the **Configuration** tab of the integration.
-2. Fill in the **Shelly address** (and its model), the **Linky meter number
-   and token**, or both.
+2. Choose the **data source**. For the Shelly, also fill in its address and
+   model.
 3. Create your **energy contract** in Gladys (see below): the prices are
    entered there, once, not in the integration.
 4. Optionally set the **reference capacity** (the stock displayed as 100 %),
    the **low stock alert** threshold and the **refresh interval**.
-5. Save, then click **Test the data sources**: the answer of each source is
-   shown under the button.
-6. Click **Set the stock** and enter the stock displayed in your Urban Solar
+5. Save. With the "Gladys devices" source, create the reading scene
+   described below.
+6. Click **Test the data sources**: the Shelly reading, or the last reading
+   the scene sent, is shown under the button.
+7. Click **Set the stock** and enter the stock displayed in your Urban Solar
    customer area: the integration starts counting from there.
-7. Add the two devices from the **Discovery** tab.
+8. Add the two devices from the **Discovery** tab.
+
+## The reading scene ("Gladys devices" source)
+
+An external integration cannot read the devices of other integrations
+itself: a Gladys scene passes their values to it.
+
+1. Create a scene triggered **every 5 minutes** (scheduled trigger). Shorter
+   gives finer half-hour figures; longer loses nothing.
+2. Add the **"Get the last value of a device"** action on the feature giving
+   the **import index** (for example the meter of the energy monitoring).
+3. Add the same action on the feature giving the **export index** (the same
+   meter, or another device: Shelly, clamp…).
+4. Add the **"Urban Solar: record a meter reading"** action and fill its
+   fields with the variables the scene editor offers for these two values
+   (for example `{{0.0.last_value}}` and `{{0.1.last_value}}`, depending on
+   where the actions sit in the scene). Choose the **unit** of the indexes:
+   kWh or Wh.
+5. Optional: also fill in the **import and export powers** (W) for the live
+   values.
+
+Good to know:
+
+- Sending the same reading twice counts nothing. An index going backwards (a
+  replaced meter) simply starts over from that reading.
+- The import and export indexes may come in separate actions, or even
+  separate scenes.
+- Without a reading for 2 hours, the Configuration screen says so and the
+  devices' badge turns orange.
 
 ## Energy contract
 
@@ -99,10 +128,13 @@ Triggers:
 
 Actions:
 
+- **Urban Solar: record a meter reading** — passes the meter indexes read
+  from Gladys devices (see the reading scene).
 - **Read the virtual battery** — returns the stock, level, state, savings,
   today's figures and live powers, for the following actions (for example:
   start the water heater only when the stock is above 50 kWh).
-- **Refresh the virtual battery** — reads the meter now.
+- **Refresh the virtual battery** — reads the Shelly now ("Shelly meter"
+  source).
 - **Set the virtual battery stock** — aligns the stock with Urban Solar.
 - **Pause or resume the accounting**.
 
@@ -121,9 +153,13 @@ Actions:
   `http://<address>/rpc/EMData.GetStatus?id=0` (three-phase) or
   `/rpc/EM1Data.GetStatus?id=0` (single-phase) from your network, and that
   the right model is selected.
-- _Linky HTTP 401/403_: the Conso API token is invalid or expired, or the
-  PRM does not match it.
-- The cloud figures appear the day after, once Enedis has published them.
+- _"Waiting for the first meter reading"_ or _"No meter reading received
+  for…"_: check that the reading scene is enabled and runs, and that its
+  variables point to the right values.
+- _"Not a number"_ in the scene log: the variable does not return a number;
+  check the feature you picked.
+- The Linky cloud readings (Conso API) are no longer supported since
+  version 3.
 - The stock drifts from Urban Solar's figure: use **Set the stock** again.
   Urban Solar's own figures are authoritative.
 - Run the integration with `LOG_LEVEL=debug` and check its logs.

@@ -2,11 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_CONFIG,
-  hasCloudSource,
-  hasLocalSource,
+  isSourceConfigured,
   normalizeConfig,
   normalizeShellyHost,
-  sourceOrder,
 } from '../src/config.js';
 
 test('normalizeConfig returns the defaults when called with no argument', () => {
@@ -28,11 +26,11 @@ test('the Shelly address keeps only a host and an optional port', () => {
   assert.equal(normalizeShellyHost(undefined), '');
 });
 
-test('the PRM keeps its digits only, and the cloud source needs 14 of them and a token', () => {
-  assert.equal(normalizeConfig({ prm: '123 456 789 012 34' }).prm, '12345678901234');
-  assert.equal(hasCloudSource(normalizeConfig({ prm: '12345678901234' })), false);
-  assert.equal(hasCloudSource(normalizeConfig({ prm: '1234', conso_token: 't' })), false);
-  assert.equal(hasCloudSource(normalizeConfig({ prm: '12345678901234', conso_token: 't' })), true);
+test('the keys of the removed Linky cloud source are dropped', () => {
+  const config = normalizeConfig({ prm: '12345678901234', conso_token: 'secret' });
+  assert.equal(config.prm, undefined);
+  assert.equal(config.conso_token, undefined, 'a stored token never reaches the code');
+  assert.equal(config.GLADYS_PREFER_LOCAL, undefined);
 });
 
 test('an unknown model or time zone falls back to the default', () => {
@@ -42,14 +40,13 @@ test('an unknown model or time zone falls back to the default', () => {
   assert.equal(normalizeConfig({ timezone: 'America/Montreal' }).timezone, 'America/Montreal');
 });
 
-test('sourceOrder follows the "Prefer the local connection" toggle', () => {
-  const both = { shelly_host: '10.0.0.2', prm: '12345678901234', conso_token: 't' };
-  assert.deepEqual(sourceOrder(normalizeConfig(both)), ['local', 'cloud']);
-  assert.deepEqual(sourceOrder(normalizeConfig({ ...both, GLADYS_PREFER_LOCAL: false })), [
-    'cloud',
-    'local',
-  ]);
-  assert.deepEqual(sourceOrder(normalizeConfig({ shelly_host: '10.0.0.2' })), ['local']);
-  assert.deepEqual(sourceOrder(normalizeConfig()), []);
-  assert.equal(hasLocalSource(normalizeConfig()), false);
+test('the Gladys devices are the default source, the Shelly needs its address', () => {
+  assert.equal(normalizeConfig().data_source, 'gladys');
+  assert.equal(normalizeConfig({ data_source: 'cloud' }).data_source, 'gladys');
+  assert.equal(isSourceConfigured(normalizeConfig()), true);
+  assert.equal(isSourceConfigured(normalizeConfig({ data_source: 'shelly' })), false);
+  assert.equal(
+    isSourceConfigured(normalizeConfig({ data_source: 'shelly', shelly_host: '10.0.0.2' })),
+    true,
+  );
 });

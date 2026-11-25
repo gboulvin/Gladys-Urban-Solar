@@ -17,16 +17,23 @@ battery and takes the energy drawn from the grid out of it; once the stock is
 empty, the grid price applies. Urban Solar has no public API, so the
 integration rebuilds that ledger from meter readings:
 
-| Source    | Transport | Data                                                      | Refresh                 |
-| --------- | --------- | --------------------------------------------------------- | ----------------------- |
-| Shelly EM | `local`   | cumulative import / export counters + instant power (LAN) | every `poll_frequency`  |
-| Linky     | `cloud`   | daily import / export readings, via the Conso API         | every 3 h, day D+1 data |
+| Source (`data_source`)   | Data                                                                                           | Refresh                         |
+| ------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------- |
+| Gladys devices (default) | cumulative import / export indexes of devices already in Gladys, sent by a scene               | at each run of the user's scene |
+| Shelly meter             | cumulative import / export counters + instant power, read directly over the LAN (Shelly Gen2+) | every `poll_frequency`          |
 
-The manifest declares both transports: with both sources configured, the
-standard "Prefer the local connection" toggle picks the preferred one, the
-other one is a fallback reported as a degraded transport badge. A day the
-local meter accounted is never accounted again from the cloud readings. The
-ledger is saved in `/data/virtual-battery.json`.
+An external integration cannot read the devices of other integrations (the
+host API only serves its own devices), so the "Gladys devices" source is a
+bridge: a Gladys scene reads the indexes of the chosen devices — the meter of
+the energy monitoring, a Shelly or a current clamp of another integration —
+with "Get the last value of a device", and passes them to the
+`record_meter_reading` scene action (text fields, so the `{{...}}` variables
+reach it). Both sources work on cumulative counters: the ledger accounts the
+difference between two readings, so a duplicate reading counts nothing and a
+missed one loses nothing. One source at a time, and switching starts over from
+the next reading: no energy is counted twice. Everything stays local (manifest
+`transports: ["local"]`): the Linky cloud source (Conso API) was removed in
+version 3. The ledger is saved in `/data/virtual-battery.json`.
 
 ## Capabilities
 
@@ -52,7 +59,7 @@ subscriptions). The integration reads it with `getEnergyContracts()` (picking
 the contract in force at each date) to compute the savings, and answers
 `onEnergyPrice` / `onEnergyCurrent`: each half-hour of the linked meter is
 priced with the share the virtual battery covered, recorded by the ledger
-(per half-hour with the Shelly, per day with the Linky readings).
+(per half-hour, from the readings).
 
 ## Project structure
 
@@ -61,7 +68,6 @@ index.js                          SDK wiring only (handlers, timer, lifecycle)
 src/engine.js                     reads the sources, keeps the ledger, publishes states, fires triggers
 src/battery.js                    the virtual battery model (pure)
 src/sources/shelly.js             local source: Shelly Gen2+ RPC (EMData / EM1Data)
-src/sources/conso.js              cloud source: Linky daily readings (Conso API)
 src/devices/                      discovery payloads of the two devices
 src/actions.js                    Configuration screen actions
 src/scenes.js                     scene actions
@@ -107,7 +113,7 @@ For the store to list it, the repository must be public with the
 
 ## Disclaimer
 
-Not affiliated with Urban Solar Energy, Enedis, Shelly or the Conso API. The
+Not affiliated with Urban Solar Energy, Enedis or Shelly. The
 figures are an estimate rebuilt from meter readings: the Urban Solar customer
 area is authoritative (use the "Set the stock" action to realign).
 

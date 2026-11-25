@@ -15,50 +15,81 @@ au prix plein du réseau. Chaque kWh déstocké paie encore des frais de
 déstockage (acheminement, taxes).
 
 Urban Solar ne propose pas d'API publique : l'intégration reconstitue donc ce
-compte à partir des relevés de votre compteur, avec l'une ou les deux sources
-suivantes :
+compte à partir des **index cumulés** de votre compteur (soutirage et
+injection), avec l'une des deux sources suivantes, au choix dans la
+configuration :
 
-- **Locale — compteur Shelly** : un Shelly Pro 3EM, 3EM Gen3, Pro EM ou EM
-  Gen3 posé sur l'arrivée du réseau, lu sur votre réseau local à chaque
-  intervalle de rafraîchissement. Puissances en direct, sans cloud, rien
-  n'est perdu pendant une coupure (le compteur garde des index cumulés).
-- **Cloud — relevés Linky** : les relevés quotidiens de votre compteur Linky,
-  publiés par Enedis le lendemain, via l'[API Conso](https://conso.boris.sh/)
-  gratuite. Chiffres quotidiens uniquement, pas de puissance en direct.
+- **Appareils Gladys** (par défaut) : n'importe quel appareil déjà présent
+  dans Gladys qui mesure l'énergie soutirée et injectée — le compteur créé par
+  le **suivi énergie**, un Shelly ou une pince ampèremétrique d'une autre
+  intégration… Une scène Gladys lit leurs index et les transmet à
+  l'intégration (voir ci-dessous).
+- **Compteur Shelly** : un Shelly Pro 3EM, 3EM Gen3, Pro EM ou EM Gen3 posé
+  sur l'arrivée du réseau, lu directement par l'intégration sur votre réseau
+  local. Puissances en direct, sans scène à créer.
 
-Avec les deux, l'interrupteur **Préférer la connexion locale** de l'écran de
-configuration choisit la source préférée ; l'autre prend le relais en cas
-d'échec, et les appareils affichent alors un point orange sur leur badge de
-transport. Une journée comptabilisée par le Shelly, même partiellement, n'est
-jamais recomptée à partir des relevés Linky.
+Dans les deux cas, l'intégration calcule elle-même la différence entre deux
+relevés : un relevé manqué, un redémarrage ou une coupure ne font rien perdre,
+le relevé suivant compte tout l'écart. Tout reste local : aucun service cloud
+n'est utilisé.
 
 ## Prérequis
 
 - Gladys Assistant 5.2 ou plus récent.
-- Pour la source locale : un compteur d'énergie Shelly (Gen2 ou plus récent)
-  sur l'arrivée du réseau, joignable depuis la machine Gladys, **sans
+- Source « Appareils Gladys » : un ou deux appareils qui exposent un **index
+  cumulé** (en kWh ou en Wh) de l'énergie soutirée et de l'énergie injectée.
+  Une puissance (W) ou une consommation journalière ne conviennent pas.
+- Source « Compteur Shelly » : un compteur d'énergie Shelly (Gen2 ou plus
+  récent) sur l'arrivée du réseau, joignable depuis la machine Gladys, **sans
   authentification** sur son API locale. Donnez-lui une adresse IP fixe dans
   votre box.
-- Pour la source cloud : le numéro à 14 chiffres de votre compteur Linky (PRM,
-  sur votre facture) et un jeton Conso API, créé sur
-  <https://conso.boris.sh/> avec votre compte Enedis. Votre production doit
-  être mesurée sur le même PRM (le cas habituel de l'autoconsommation avec
-  vente du surplus).
 
 ## Configuration
 
 1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez l'**adresse du Shelly** (et son modèle), le **numéro et le
-   jeton du compteur Linky**, ou les deux.
-3. Créez votre **contrat d'énergie** dans Gladys (voir ci-dessous) : les
+2. Choisissez la **source des données**. Pour le Shelly, renseignez aussi son
+   adresse et son modèle.
+3. Créez votre **contrat d'énergie** dans Gladys (voir plus bas) : les
    tarifs se saisissent là, une seule fois, pas dans l'intégration.
 4. Réglez si besoin la **capacité de référence** (le stock affiché à 100 %),
    le seuil d'**alerte de stock bas** et l'**intervalle de rafraîchissement**.
-5. Enregistrez, puis cliquez sur **Tester les sources de données** : la
-   réponse de chaque source s'affiche sous le bouton.
-6. Cliquez sur **Régler le stock** et saisissez le stock affiché dans votre
+5. Enregistrez. Avec la source « Appareils Gladys », créez la scène de relevé
+   décrite ci-dessous.
+6. Cliquez sur **Tester les sources de données** : la lecture du Shelly, ou
+   le dernier relevé reçu de la scène, s'affiche sous le bouton.
+7. Cliquez sur **Régler le stock** et saisissez le stock affiché dans votre
    espace client Urban Solar : l'intégration compte à partir de là.
-7. Ajoutez les deux appareils depuis l'onglet **Découverte**.
+8. Ajoutez les deux appareils depuis l'onglet **Découverte**.
+
+## La scène de relevé (source « Appareils Gladys »)
+
+Une intégration externe ne peut pas lire elle-même les appareils des autres
+intégrations : c'est une scène Gladys qui lui transmet leurs valeurs.
+
+1. Créez une scène déclenchée **toutes les 5 minutes** (déclencheur
+   planifié). Plus court, les chiffres de la demi-heure sont plus fins ; plus
+   long, rien n'est perdu pour autant.
+2. Ajoutez l'action **« Récupérer la dernière valeur d'un appareil »** sur la
+   fonctionnalité qui donne l'**index de soutirage** (par exemple le compteur
+   du suivi énergie).
+3. Ajoutez la même action sur la fonctionnalité qui donne l'**index
+   d'injection** (le même compteur, ou un autre appareil : Shelly, pince…).
+4. Ajoutez l'action **« Urban Solar : enregistrer un relevé du compteur »**
+   et remplissez ses champs avec les variables que l'éditeur de scène propose
+   pour ces deux valeurs (par exemple `{{0.0.last_value}}` et
+   `{{0.1.last_value}}`, selon la place des actions dans la scène). Choisissez
+   l'**unité** des index : kWh ou Wh.
+5. Facultatif : renseignez aussi les **puissances soutirée et injectée** (W)
+   pour les valeurs en direct.
+
+Bon à savoir :
+
+- Envoyer deux fois le même relevé ne compte rien. Un index qui recule
+  (compteur remplacé) fait simplement repartir de ce relevé.
+- Les index de soutirage et d'injection peuvent arriver dans des actions, ou
+  même des scènes, séparées.
+- Sans relevé pendant 2 heures, l'écran de configuration le signale et le
+  badge des appareils passe à l'orange.
 
 ## Contrat d'énergie
 
@@ -106,11 +137,14 @@ Déclencheurs :
 
 Actions :
 
+- **Urban Solar : enregistrer un relevé du compteur** — transmet les index
+  du compteur lus sur des appareils Gladys (voir la scène de relevé).
 - **Lire la batterie virtuelle** — renvoie le stock, le niveau, l'état, les
   économies, les chiffres du jour et les puissances en direct, pour les
   actions suivantes (par exemple : ne lancer le chauffe-eau que si le stock
   dépasse 50 kWh).
-- **Actualiser la batterie virtuelle** — lit le compteur tout de suite.
+- **Actualiser la batterie virtuelle** — lit le Shelly tout de suite (source
+  « Compteur Shelly »).
 - **Régler le stock de la batterie virtuelle** — aligne le stock sur Urban
   Solar.
 - **Suspendre ou reprendre le comptage**.
@@ -131,9 +165,13 @@ Actions :
   `http://<adresse>/rpc/EMData.GetStatus?id=0` (triphasé) ou
   `/rpc/EM1Data.GetStatus?id=0` (monophasé) depuis votre réseau, et que le
   bon modèle est choisi.
-- _Linky HTTP 401/403_ : le jeton Conso API est invalide ou expiré, ou le PRM
-  ne lui correspond pas.
-- Les chiffres cloud apparaissent le lendemain, une fois publiés par Enedis.
+- _« En attente du premier relevé »_ ou _« Aucun relevé reçu depuis… »_ :
+  vérifiez que la scène de relevé est active et s'exécute, et que ses
+  variables pointent sur les bonnes valeurs.
+- _« Not a number »_ dans le journal de la scène : la variable ne renvoie pas
+  un nombre ; vérifiez la fonctionnalité choisie.
+- Les relevés cloud du Linky (API Conso) ne sont plus pris en charge depuis
+  la version 3.
 - Le stock s'écarte de celui d'Urban Solar : utilisez à nouveau **Régler le
   stock**. Les chiffres d'Urban Solar font foi.
 - Lancez l'intégration avec `LOG_LEVEL=debug` et consultez ses logs.

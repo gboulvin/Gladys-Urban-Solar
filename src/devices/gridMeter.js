@@ -1,9 +1,8 @@
 // -----------------------------------------------------------------------------
 // Device: the GRID CONNECTION seen by the virtual battery.
 //
-// A `grid-sensor` device: the instant import / export powers (local source
-// only, the Linky cloud readings are daily), the energies imported from and
-// injected into the grid since the integration started counting, and the
+// A `grid-sensor` device: the instant import / export powers (when the
+// readings carry them), the energies imported from and injected into the grid since the integration started counting, and the
 // share of the import the battery could not cover — billed at the full price.
 // -----------------------------------------------------------------------------
 

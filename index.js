@@ -34,8 +34,8 @@ const engine = createEngine({ gladys, store: createStore() });
 let config = normalizeConfig();
 let ready = false;
 
-// The engine decides by itself whether a read is due (refresh interval for
-// the Shelly meter, a few hours for the Linky readings): the timer only
+// The engine decides by itself whether a run is due (refresh interval: read
+// the Shelly meter, or check the Gladys scene still reports): the timer only
 // gives it a chance every 15 seconds.
 const TICK_MS = 15000;
 let timer = null;

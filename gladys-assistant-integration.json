@@ -24,7 +24,7 @@
     "autoconsommation"
   ],
   "countries": ["FR"],
-  "transports": ["local", "cloud"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
@@ -36,10 +36,10 @@
         "es": "Su batería virtual"
       },
       "description": {
-        "en": "Urban Solar credits the solar energy you inject into the grid to a virtual battery, and takes the energy you draw from the grid out of it. The integration rebuilds that ledger from your meter readings: connect a local Shelly meter, the Linky cloud readings, or both.",
-        "fr": "Urban Solar crédite l'énergie solaire que vous injectez sur le réseau dans une batterie virtuelle, et y puise l'énergie que vous soutirez. L'intégration reconstitue ce compte à partir des relevés de votre compteur : branchez un compteur Shelly local, les relevés cloud du Linky, ou les deux.",
-        "de": "Urban Solar schreibt den eingespeisten Solarstrom einer virtuellen Batterie gut und entnimmt ihr den aus dem Netz bezogenen Strom. Die Integration rekonstruiert dieses Konto aus Ihren Zählerständen: Verbinden Sie einen lokalen Shelly-Zähler, die Linky-Clouddaten oder beides.",
-        "es": "Urban Solar abona la energía solar que inyecta a la red en una batería virtual y descuenta de ella la energía que consume de la red. La integración reconstruye esa cuenta a partir de las lecturas de su contador: conecte un medidor Shelly local, las lecturas en la nube del Linky, o ambos."
+        "en": "Urban Solar credits the solar energy you inject into the grid to a virtual battery, and takes the energy you draw from the grid out of it. The integration rebuilds that ledger from the indexes of your meter: from devices already in Gladys, or from a Shelly meter.",
+        "fr": "Urban Solar crédite l'énergie solaire que vous injectez sur le réseau dans une batterie virtuelle, et y puise l'énergie que vous soutirez. L'intégration reconstitue ce compte à partir des index de votre compteur : depuis des appareils déjà présents dans Gladys, ou depuis un compteur Shelly.",
+        "de": "Urban Solar schreibt den eingespeisten Solarstrom einer virtuellen Batterie gut und entnimmt ihr den aus dem Netz bezogenen Strom. Die Integration rekonstruiert dieses Konto aus den Zählerständen: von Geräten, die bereits in Gladys sind, oder von einem Shelly-Zähler.",
+        "es": "Urban Solar abona la energía solar que inyecta a la red en una batería virtual y descuenta de ella la energía que consume de la red. La integración reconstruye esa cuenta a partir de los índices de su contador: desde dispositivos ya presentes en Gladys o desde un medidor Shelly."
       },
       "links": [
         {
@@ -54,19 +54,73 @@
       ]
     },
     {
+      "key": "data_source",
+      "type": "select",
+      "label": {
+        "en": "Data source",
+        "fr": "Source des données",
+        "de": "Datenquelle",
+        "es": "Fuente de datos"
+      },
+      "description": {
+        "en": "Where the meter indexes come from. One source at a time, so no energy is counted twice.",
+        "fr": "D'où viennent les index du compteur. Une seule source à la fois, pour ne jamais compter deux fois la même énergie.",
+        "de": "Woher die Zählerstände kommen. Immer nur eine Quelle, damit keine Energie doppelt gezählt wird.",
+        "es": "De dónde vienen los índices del contador. Una sola fuente a la vez, para no contar nunca dos veces la misma energía."
+      },
+      "required": true,
+      "default": "gladys",
+      "options": [
+        {
+          "value": "gladys",
+          "label": {
+            "en": "Gladys devices (through a scene)",
+            "fr": "Appareils Gladys (via une scène)",
+            "de": "Gladys-Geräte (über eine Szene)",
+            "es": "Dispositivos Gladys (mediante una escena)"
+          }
+        },
+        {
+          "value": "shelly",
+          "label": {
+            "en": "Shelly meter (read directly)",
+            "fr": "Compteur Shelly (lu directement)",
+            "de": "Shelly-Zähler (direkt gelesen)",
+            "es": "Medidor Shelly (leído directamente)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "gladys_section",
+      "type": "section",
+      "label": {
+        "en": "Source: Gladys devices",
+        "fr": "Source : appareils Gladys",
+        "de": "Quelle: Gladys-Geräte",
+        "es": "Fuente: dispositivos Gladys"
+      },
+      "description": {
+        "en": "Use any device already in Gladys: the meter of the energy monitoring, a Shelly or a current clamp of another integration... Create a scene that reads the cumulative import and export indexes (\"Get the last value of a device\") and passes them to the \"Urban Solar: record a meter reading\" action, every 5 minutes for example. Step by step: see the documentation.",
+        "fr": "Utilisez n'importe quel appareil déjà présent dans Gladys : le compteur du suivi énergie, un Shelly ou une pince ampèremétrique d'une autre intégration… Créez une scène qui lit les index cumulés de soutirage et d'injection (« Récupérer la dernière valeur d'un appareil ») et les transmet à l'action « Urban Solar : enregistrer un relevé du compteur », toutes les 5 minutes par exemple. Pas à pas : voir la documentation.",
+        "de": "Nutzen Sie ein beliebiges Gerät, das bereits in Gladys ist: den Zähler der Energieüberwachung, einen Shelly oder eine Stromzange einer anderen Integration… Legen Sie eine Szene an, die die kumulierten Bezugs- und Einspeisestände liest („Letzten Wert eines Geräts abrufen“) und an die Aktion „Urban Solar: Zählerstand erfassen“ übergibt, z. B. alle 5 Minuten. Schritt für Schritt: siehe Dokumentation.",
+        "es": "Use cualquier dispositivo ya presente en Gladys: el contador del seguimiento energético, un Shelly o una pinza amperimétrica de otra integración… Cree una escena que lea los índices acumulados de consumo e inyección («Obtener el último valor de un dispositivo») y los pase a la acción «Urban Solar: registrar una lectura del contador», cada 5 minutos por ejemplo. Paso a paso: vea la documentación."
+      }
+    },
+    {
       "key": "local_section",
       "type": "section",
       "label": {
-        "en": "Local source: Shelly meter",
-        "fr": "Source locale : compteur Shelly",
-        "de": "Lokale Quelle: Shelly-Zähler",
-        "es": "Fuente local: medidor Shelly"
+        "en": "Source: Shelly meter",
+        "fr": "Source : compteur Shelly",
+        "de": "Quelle: Shelly-Zähler",
+        "es": "Fuente: medidor Shelly"
       },
       "description": {
-        "en": "A Shelly Pro 3EM, Pro EM or EM Gen3 clamped on the grid connection, read over your network every refresh interval. Live powers, no cloud.",
-        "fr": "Un Shelly Pro 3EM, Pro EM ou EM Gen3 posé sur l'arrivée du réseau, lu sur votre réseau local à chaque intervalle. Puissances en direct, sans cloud.",
-        "de": "Ein Shelly Pro 3EM, Pro EM oder EM Gen3 am Netzanschluss, in jedem Intervall über Ihr lokales Netz gelesen. Live-Leistungen, ohne Cloud.",
-        "es": "Un Shelly Pro 3EM, Pro EM o EM Gen3 en la acometida, leído por su red local en cada intervalo. Potencias en directo, sin nube."
+        "en": "Only with the \"Shelly meter\" source: a Shelly Pro 3EM, Pro EM or EM Gen3 clamped on the grid connection, read directly over your network every refresh interval. Live powers.",
+        "fr": "Uniquement avec la source « Compteur Shelly » : un Shelly Pro 3EM, Pro EM ou EM Gen3 posé sur l'arrivée du réseau, lu directement sur votre réseau local à chaque intervalle. Puissances en direct.",
+        "de": "Nur mit der Quelle „Shelly-Zähler“: ein Shelly Pro 3EM, Pro EM oder EM Gen3 am Netzanschluss, in jedem Intervall direkt über Ihr lokales Netz gelesen. Live-Leistungen.",
+        "es": "Solo con la fuente «Medidor Shelly»: un Shelly Pro 3EM, Pro EM o EM Gen3 en la acometida, leído directamente por su red local en cada intervalo. Potencias en directo."
       }
     },
     {
@@ -79,10 +133,10 @@
         "es": "Dirección del Shelly"
       },
       "description": {
-        "en": "IP address or host name of the meter, without http://. Leave empty to use only the cloud source.",
-        "fr": "Adresse IP ou nom d'hôte du compteur, sans http://. Laissez vide pour n'utiliser que la source cloud.",
-        "de": "IP-Adresse oder Hostname des Zählers, ohne http://. Leer lassen, um nur die Cloud-Quelle zu nutzen.",
-        "es": "Dirección IP o nombre de host del medidor, sin http://. Déjelo vacío para usar solo la fuente en la nube."
+        "en": "IP address or host name of the meter, without http://.",
+        "fr": "Adresse IP ou nom d'hôte du compteur, sans http://.",
+        "de": "IP-Adresse oder Hostname des Zählers, ohne http://.",
+        "es": "Dirección IP o nombre de host del medidor, sin http://."
       },
       "placeholder": {
         "en": "e.g. 192.168.1.50",
@@ -123,73 +177,6 @@
           }
         }
       ]
-    },
-    {
-      "key": "cloud_section",
-      "type": "section",
-      "label": {
-        "en": "Cloud source: Linky readings",
-        "fr": "Source cloud : relevés Linky",
-        "de": "Cloud-Quelle: Linky-Daten",
-        "es": "Fuente en la nube: lecturas Linky"
-      },
-      "description": {
-        "en": "The daily readings of your Linky meter, published by Enedis the next day, through the free Conso API. Create your token on its website with your Enedis account.",
-        "fr": "Les relevés quotidiens de votre Linky, publiés par Enedis le lendemain, via l'API gratuite Conso. Créez votre jeton sur son site avec votre compte Enedis.",
-        "de": "Die Tageswerte Ihres Linky-Zählers, von Enedis am Folgetag veröffentlicht, über die kostenlose Conso-API. Erstellen Sie Ihr Token auf deren Website mit Ihrem Enedis-Konto.",
-        "es": "Las lecturas diarias de su contador Linky, publicadas por Enedis al día siguiente, mediante la API gratuita Conso. Cree su token en su web con su cuenta Enedis."
-      },
-      "links": [
-        {
-          "url": "https://conso.boris.sh/",
-          "label": {
-            "en": "Get a Conso API token",
-            "fr": "Obtenir un jeton Conso API",
-            "de": "Conso-API-Token erhalten",
-            "es": "Obtener un token de Conso API"
-          }
-        }
-      ]
-    },
-    {
-      "key": "prm",
-      "type": "string",
-      "label": {
-        "en": "Linky meter number (PRM)",
-        "fr": "Numéro du compteur Linky (PRM)",
-        "de": "Linky-Zählernummer (PRM)",
-        "es": "Número del contador Linky (PRM)"
-      },
-      "description": {
-        "en": "The 14 digits shown on your bill or on the meter.",
-        "fr": "Les 14 chiffres indiqués sur votre facture ou sur le compteur.",
-        "de": "Die 14 Ziffern auf Ihrer Rechnung oder am Zähler.",
-        "es": "Los 14 dígitos que figuran en su factura o en el contador."
-      },
-      "placeholder": {
-        "en": "e.g. 12345678901234",
-        "fr": "ex. 12345678901234",
-        "de": "z. B. 12345678901234",
-        "es": "p. ej. 12345678901234"
-      },
-      "required": false
-    },
-    {
-      "key": "conso_token",
-      "type": "secret",
-      "label": {
-        "en": "Conso API token",
-        "fr": "Jeton Conso API",
-        "de": "Conso-API-Token",
-        "es": "Token de Conso API"
-      },
-      "placeholder": {
-        "en": "Paste your token",
-        "fr": "Collez votre jeton",
-        "de": "Token einfügen",
-        "es": "Pegue su token"
-      },
-      "required": false
     },
     {
       "key": "battery_section",
@@ -257,10 +244,10 @@
         "es": "Intervalo de actualización (s)"
       },
       "description": {
-        "en": "How often the Shelly meter is read (one minute minimum). The Linky readings are checked every 3 hours.",
-        "fr": "Fréquence de lecture du Shelly (une minute minimum). Les relevés Linky sont vérifiés toutes les 3 heures.",
-        "de": "Wie oft der Shelly gelesen wird (mindestens eine Minute). Die Linky-Daten werden alle 3 Stunden geprüft.",
-        "es": "Frecuencia de lectura del Shelly (un minuto como mínimo). Las lecturas Linky se comprueban cada 3 horas."
+        "en": "How often the Shelly meter is read, or the Gladys scene checked (one minute minimum).",
+        "fr": "Fréquence de lecture du Shelly, ou de vérification de la scène Gladys (une minute minimum).",
+        "de": "Wie oft der Shelly gelesen bzw. die Gladys-Szene geprüft wird (mindestens eine Minute).",
+        "es": "Frecuencia de lectura del Shelly, o de comprobación de la escena de Gladys (un minuto como mínimo)."
       },
       "required": false,
       "default": 60,
@@ -539,6 +526,193 @@
     }
   ],
   "scene_actions": [
+    {
+      "key": "record_meter_reading",
+      "label": {
+        "en": "Urban Solar: record a meter reading",
+        "fr": "Urban Solar : enregistrer un relevé du compteur",
+        "de": "Urban Solar: Zählerstand erfassen",
+        "es": "Urban Solar: registrar una lectura del contador"
+      },
+      "description": {
+        "en": "Passes the meter indexes read from Gladys devices to the virtual battery.",
+        "fr": "Transmet à la batterie virtuelle les index du compteur lus sur des appareils Gladys.",
+        "de": "Übergibt der virtuellen Batterie die von Gladys-Geräten gelesenen Zählerstände.",
+        "es": "Pasa a la batería virtual los índices del contador leídos de dispositivos Gladys."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "import_index",
+          "type": "string",
+          "label": {
+            "en": "Import index",
+            "fr": "Index de soutirage",
+            "de": "Bezugsstand",
+            "es": "Índice de consumo"
+          },
+          "description": {
+            "en": "Cumulative import index of the meter, e.g. {{0.0.last_value}}. Never a power nor a daily consumption.",
+            "fr": "Index cumulé de soutirage du compteur, ex. {{0.0.last_value}}. Jamais une puissance ni une consommation journalière.",
+            "de": "Kumulierter Bezugsstand des Zählers, z. B. {{0.0.last_value}}. Nie eine Leistung oder ein Tagesverbrauch.",
+            "es": "Índice acumulado de consumo del contador, p. ej. {{0.0.last_value}}. Nunca una potencia ni un consumo diario."
+          },
+          "placeholder": {
+            "en": "{{0.0.last_value}}",
+            "fr": "{{0.0.last_value}}",
+            "de": "{{0.0.last_value}}",
+            "es": "{{0.0.last_value}}"
+          }
+        },
+        {
+          "key": "export_index",
+          "type": "string",
+          "label": {
+            "en": "Export index",
+            "fr": "Index d'injection",
+            "de": "Einspeisestand",
+            "es": "Índice de inyección"
+          },
+          "description": {
+            "en": "Cumulative export (injection) index of the meter, e.g. {{0.1.last_value}}. Never a power nor a daily figure.",
+            "fr": "Index cumulé d'injection du compteur, ex. {{0.1.last_value}}. Jamais une puissance ni une valeur journalière.",
+            "de": "Kumulierter Einspeisestand des Zählers, z. B. {{0.1.last_value}}. Nie eine Leistung oder ein Tageswert.",
+            "es": "Índice acumulado de inyección del contador, p. ej. {{0.1.last_value}}. Nunca una potencia ni un valor diario."
+          },
+          "placeholder": {
+            "en": "{{0.1.last_value}}",
+            "fr": "{{0.1.last_value}}",
+            "de": "{{0.1.last_value}}",
+            "es": "{{0.1.last_value}}"
+          }
+        },
+        {
+          "key": "unit",
+          "type": "select",
+          "label": {
+            "en": "Unit of the indexes",
+            "fr": "Unité des index",
+            "de": "Einheit der Zählerstände",
+            "es": "Unidad de los índices"
+          },
+          "default": "kwh",
+          "options": [
+            {
+              "value": "kwh",
+              "label": {
+                "en": "kWh",
+                "fr": "kWh",
+                "de": "kWh",
+                "es": "kWh"
+              }
+            },
+            {
+              "value": "wh",
+              "label": {
+                "en": "Wh",
+                "fr": "Wh",
+                "de": "Wh",
+                "es": "Wh"
+              }
+            }
+          ]
+        },
+        {
+          "key": "import_power",
+          "type": "string",
+          "label": {
+            "en": "Import power (W)",
+            "fr": "Puissance soutirée (W)",
+            "de": "Bezugsleistung (W)",
+            "es": "Potencia consumida (W)"
+          },
+          "description": {
+            "en": "Optional: import power in W, for the live values.",
+            "fr": "Facultatif : puissance soutirée en W, pour les valeurs en direct.",
+            "de": "Optional: Bezugsleistung in W, für die Live-Werte.",
+            "es": "Opcional: potencia consumida en W, para los valores en directo."
+          }
+        },
+        {
+          "key": "export_power",
+          "type": "string",
+          "label": {
+            "en": "Export power (W)",
+            "fr": "Puissance injectée (W)",
+            "de": "Einspeiseleistung (W)",
+            "es": "Potencia inyectada (W)"
+          },
+          "description": {
+            "en": "Optional: export power in W, for the live values.",
+            "fr": "Facultatif : puissance injectée en W, pour les valeurs en direct.",
+            "de": "Optional: Einspeiseleistung in W, für die Live-Werte.",
+            "es": "Opcional: potencia inyectada en W, para los valores en directo."
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "accepted",
+          "type": "boolean",
+          "label": {
+            "en": "Reading accepted",
+            "fr": "Relevé accepté",
+            "de": "Messwert angenommen",
+            "es": "Lectura aceptada"
+          }
+        },
+        {
+          "key": "imported_kwh",
+          "type": "number",
+          "label": {
+            "en": "Imported since last (kWh)",
+            "fr": "Soutiré depuis le précédent (kWh)",
+            "de": "Bezogen seit dem letzten (kWh)",
+            "es": "Consumido desde la anterior (kWh)"
+          }
+        },
+        {
+          "key": "exported_kwh",
+          "type": "number",
+          "label": {
+            "en": "Exported since last (kWh)",
+            "fr": "Injecté depuis le précédent (kWh)",
+            "de": "Eingespeist seit dem letzten (kWh)",
+            "es": "Inyectado desde la anterior (kWh)"
+          }
+        },
+        {
+          "key": "stored_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stored (kWh)",
+            "fr": "Stocké (kWh)",
+            "de": "Gespeichert (kWh)",
+            "es": "Almacenado (kWh)"
+          }
+        },
+        {
+          "key": "withdrawn_kwh",
+          "type": "number",
+          "label": {
+            "en": "Withdrawn (kWh)",
+            "fr": "Déstocké (kWh)",
+            "de": "Entnommen (kWh)",
+            "es": "Retirado (kWh)"
+          }
+        },
+        {
+          "key": "stock_kwh",
+          "type": "number",
+          "label": {
+            "en": "Stock (kWh)",
+            "fr": "Stock (kWh)",
+            "de": "Bestand (kWh)",
+            "es": "Saldo (kWh)"
+          }
+        }
+      ]
+    },
     {
       "key": "get_status",
       "label": {

@@ -33,8 +33,8 @@ export function gridFeatureId(gladys, key) {
 
 /**
  * The `publishTransports` payload: both devices are fed by the same source,
- * so they share its transport badge (local Shelly, Linky cloud, or
- * unreachable), with the degraded flag when the preferred source failed.
+ * so they share its transport badge (local, or unreachable), with the
+ * degraded flag while the Gladys scene does not report.
  */
 export function buildTransportEntries(gladys, transport) {
   const entry = transport.degraded
