@@ -1,6 +1,6 @@
 {
   "name": "gladys-urban-solar",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "description": "Gladys Assistant integration for the Urban Solar virtual battery: stock, savings, scene triggers and actions, dashboard widgets.",
   "type": "module",

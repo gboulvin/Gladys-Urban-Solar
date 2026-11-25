@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-25
+
 ## [3.0.0] - 2026-11-25
 
 ### Added
@@ -82,7 +84,8 @@ the notes of the version's GitHub Release.
   and user documentation.
 - `SECURITY.md` and `CLAUDE.md`.
 
-[Unreleased]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/releases/tag/v1.0.0
