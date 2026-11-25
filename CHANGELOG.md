@@ -12,8 +12,6 @@ the notes of the version's GitHub Release.
 
 ## [3.1.0] - 2026-11-25
 
-## [3.0.0] - 2026-11-25
-
 ### Added
 
 - "Gladys devices" data source, the new default: use any device already in
@@ -31,6 +29,10 @@ the notes of the version's GitHub Release.
 - The Linky cloud source (Conso API) and its fields (meter number, token):
   everything is now local. The stored token is ignored. The "Prefer the local
   connection" toggle goes with it.
+
+## [3.0.0] - 2026-11-25
+
+Not published: its tag could not be created. Its changes shipped in 3.1.0.
 
 ## [2.0.0] - 2026-11-23
 
@@ -85,7 +87,6 @@ the notes of the version's GitHub Release.
 - `SECURITY.md` and `CLAUDE.md`.
 
 [Unreleased]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v3.1.0...HEAD
-[3.1.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v3.0.0...v3.1.0
-[3.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v2.0.0...v3.0.0
+[3.1.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v2.0.0...v3.1.0
 [2.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/gboulvin/Gladys-Urban-Solar/releases/tag/v1.0.0
