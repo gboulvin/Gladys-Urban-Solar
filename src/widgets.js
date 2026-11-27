@@ -229,6 +229,11 @@ export const WIDGETS = {
       logger.info(`onWidgetAction <- ${VIRTUAL_BATTERY_WIDGET}.${actionKey}`);
       if (actionKey === WIDGET_ACTIONS.REFRESH) {
         const result = await engine.refresh(config, { force: true });
+        if (!result?.ok && config.data_source === 'gladys') {
+          // Nothing to read: the readings come from the user's scene. Say
+          // what to do instead of reporting a failure.
+          return t('refresh_gladys_hint');
+        }
         if (!result?.ok) {
           throw new Error(t('refresh_failed', { error: result?.error ?? '?' }).en);
         }

@@ -138,6 +138,11 @@ setzen**, **Abrechnung pausieren oder fortsetzen**.
 - _„Warte auf den ersten Zählerstand“_ oder _„Seit … Minuten kein
   Zählerstand“_: Prüfen Sie, ob die Messwert-Szene aktiv ist und läuft und
   ihre Variablen auf die richtigen Werte zeigen.
+- _Nichts bewegt sich, und die Szene nutzt „Virtuelle Batterie aktualisieren“_:
+  Diese Aktion liest mit der Quelle „Gladys-Geräte“ nichts. Die Szene muss
+  **„Urban Solar: Zählerstand erfassen“** mit den Zählerständen aufrufen. Jeder
+  Messwert steht in den Logs der Integration (`Meter reading: …`), ein
+  abgelehnter mit seinem Grund (`Scene action record_meter_reading failed: …`).
 - Die Linky-Clouddaten (Conso-API) werden seit Version 3 nicht mehr
   unterstützt.
 - Weicht der Bestand von Urban Solar ab, nutzen Sie erneut **Bestand

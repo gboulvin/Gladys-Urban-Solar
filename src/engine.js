@@ -465,6 +465,14 @@ export function createEngine({
       state.startedAt ??= state.lastUpdate;
       setTransport(SOURCES.GLADYS, null);
       await commit(config, previousStock);
+      const shown = (index, delta) =>
+        index === null
+          ? '-'
+          : `${index}${delta === null ? ' (first reading)' : ` (+${round(delta, 3)} kWh)`}`;
+      logger.info(
+        `Meter reading: import ${shown(importIndex, importKwh)}, export ${shown(exportIndex, exportKwh)} ` +
+          `[${fields.unit ?? 'kwh'}] -> stock ${round(state.stockKwh, 2)} kWh`,
+      );
       return {
         accepted: true,
         imported_kwh: round(importKwh ?? 0, 3),

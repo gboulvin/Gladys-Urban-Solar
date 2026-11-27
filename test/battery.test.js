@@ -94,3 +94,10 @@ test('parseReading reads the numbers a scene substitutes into text', () => {
   assert.equal(parseReading('{{0.0.last_value}}'), null, 'an unresolved variable is no value');
   assert.throws(() => parseReading('abc'), RangeError);
 });
+
+test('parseReading ignores a unit written after the number', () => {
+  assert.equal(parseReading('1234.5 kWh'), 1234.5);
+  assert.equal(parseReading('1234,5kwh'), 1234.5);
+  assert.equal(parseReading('980 Wh'), 980);
+  assert.throws(() => parseReading('12 m3'), RangeError, 'not an energy unit');
+});

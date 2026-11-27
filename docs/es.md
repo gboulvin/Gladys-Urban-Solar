@@ -134,6 +134,12 @@ reanudar la contabilización**.
 - _«Esperando la primera lectura»_ o _«No se ha recibido ninguna lectura
   desde hace…»_: compruebe que la escena de lectura está activa y se ejecuta,
   y que sus variables apuntan a los valores correctos.
+- _No cambia nada y la escena usa «Actualizar la batería virtual»_: esa acción
+  no lee nada con la fuente «Dispositivos Gladys». La escena debe llamar a
+  **«Urban Solar: registrar una lectura del contador»** con los índices en sus
+  campos. Cada lectura aparece en los registros de la integración
+  (`Meter reading: …`), y una rechazada con su motivo
+  (`Scene action record_meter_reading failed: …`).
 - Las lecturas en la nube del Linky (API Conso) ya no se admiten desde la
   versión 3.
 - Si el saldo se desvía del de Urban Solar, use de nuevo **Ajustar saldo**:

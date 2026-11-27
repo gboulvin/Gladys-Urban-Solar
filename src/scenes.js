@@ -46,6 +46,14 @@ export const SCENE_ACTIONS = {
 
   async refresh_data({ config, engine }) {
     logger.info('Scene action refresh_data');
+    if (config.data_source === 'gladys') {
+      // A frequent mistake: this action reads nothing with the Gladys source,
+      // the readings only come from "Record a meter reading".
+      logger.info(
+        'With the "Gladys devices" source there is nothing to read: the scene must pass the ' +
+          'meter indexes with the "Urban Solar: record a meter reading" action',
+      );
+    }
     const result = await engine.refresh(config, { force: true });
     return { success: Boolean(result?.ok), stock_kwh: engine.status(config).stockKwh };
   },

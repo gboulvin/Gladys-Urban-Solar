@@ -221,7 +221,12 @@ export function parseReading(value) {
     if (!Number.isFinite(value)) throw new RangeError(`Not a number: ${value}`);
     return value;
   }
-  const text = String(value).trim().replace(/\s/g, '').replace(',', '.');
+  const text = String(value)
+    .trim()
+    .replace(/\s/g, '')
+    .replace(',', '.')
+    // A unit after the number ("1234.5 kWh"): the "unit" field decides.
+    .replace(/^(-?\d+(?:\.\d+)?)(?:k?wh|w)$/i, '$1');
   if (text === '' || text === 'null' || text === 'undefined' || text.includes('{{')) return null;
   const number = Number(text);
   if (!Number.isFinite(number)) throw new RangeError(`Not a number: ${String(value).slice(0, 40)}`);

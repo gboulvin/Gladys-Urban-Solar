@@ -63,10 +63,16 @@ export const MESSAGES = {
     es: 'El medidor Shelly es la fuente de datos elegida, pero falta su dirección.',
   },
   status_waiting_reading: {
-    en: 'Waiting for the first meter reading: create the Gladys scene that sends it (see the documentation).',
-    fr: 'En attente du premier relevé du compteur : créez la scène Gladys qui l’envoie (voir la documentation).',
-    de: 'Warte auf den ersten Zählerstand: Legen Sie die Gladys-Szene an, die ihn sendet (siehe Dokumentation).',
-    es: 'Esperando la primera lectura del contador: cree la escena de Gladys que la envía (ver la documentación).',
+    en: 'Waiting for the first meter reading: your scene must use the "Urban Solar: record a meter reading" action (see the documentation).',
+    fr: 'En attente du premier relevé du compteur : votre scène doit utiliser l’action « Urban Solar : enregistrer un relevé du compteur » (voir la documentation).',
+    de: 'Warte auf den ersten Zählerstand: Ihre Szene muss die Aktion „Urban Solar: Zählerstand erfassen“ verwenden (siehe Dokumentation).',
+    es: 'Esperando la primera lectura del contador: su escena debe usar la acción «Urban Solar: registrar una lectura del contador» (ver la documentación).',
+  },
+  refresh_gladys_hint: {
+    en: 'Nothing to read here: the readings come from your scene, with the "Record a meter reading" action.',
+    fr: 'Rien à lire ici : les relevés viennent de votre scène, avec l’action « Enregistrer un relevé du compteur ».',
+    de: 'Hier gibt es nichts zu lesen: Die Messwerte kommen aus Ihrer Szene, mit der Aktion „Zählerstand erfassen“.',
+    es: 'Nada que leer aquí: las lecturas vienen de su escena, con la acción «Registrar una lectura del contador».',
   },
   status_stale_reading: {
     en: 'No meter reading received for {minutes} minutes: check the Gladys scene and its devices.',

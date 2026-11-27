@@ -158,6 +158,11 @@ Actions:
   variables point to the right values.
 - _"Not a number"_ in the scene log: the variable does not return a number;
   check the feature you picked.
+- _Nothing moves, and the scene uses "Refresh the virtual battery"_: that
+  action reads nothing with the "Gladys devices" source. The scene must call
+  **"Urban Solar: record a meter reading"**, with the indexes in its fields.
+  Each reading is written in the integration logs (`Meter reading: …`), and a
+  refused one with its reason (`Scene action record_meter_reading failed: …`).
 - The Linky cloud readings (Conso API) are no longer supported since
   version 3.
 - The stock drifts from Urban Solar's figure: use **Set the stock** again.

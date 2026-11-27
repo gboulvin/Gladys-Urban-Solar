@@ -170,6 +170,12 @@ Actions :
   variables pointent sur les bonnes valeurs.
 - _« Not a number »_ dans le journal de la scène : la variable ne renvoie pas
   un nombre ; vérifiez la fonctionnalité choisie.
+- _Rien ne bouge, et la scène utilise « Actualiser la batterie virtuelle »_ :
+  cette action ne lit rien avec la source « Appareils Gladys ». La scène doit
+  appeler **« Urban Solar : enregistrer un relevé du compteur »**, avec les
+  index dans ses champs. Chaque relevé est écrit dans les logs de
+  l'intégration (`Meter reading: …`), et un relevé refusé avec sa raison
+  (`Scene action record_meter_reading failed: …`).
 - Les relevés cloud du Linky (API Conso) ne sont plus pris en charge depuis
   la version 3.
 - Le stock s'écarte de celui d'Urban Solar : utilisez à nouveau **Régler le

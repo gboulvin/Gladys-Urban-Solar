@@ -10,6 +10,19 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- "Refresh the virtual battery" (scene action and widget button) no longer
+  reports an error with the "Gladys devices" source: the button explains that
+  the readings come from the "Record a meter reading" action of the scene.
+- A meter reading written with its unit ("1234.5 kWh") is accepted.
+
+### Changed
+
+- Every meter reading is written in the integration logs, and every refused
+  action with its reason: a scene that sends nothing usable is now visible.
+- The "waiting for the first reading" status names the scene action to use.
+
 ## [3.1.0] - 2026-11-25
 
 ### Added

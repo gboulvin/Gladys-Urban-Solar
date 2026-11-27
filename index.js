@@ -60,6 +60,20 @@ function stopTimer() {
   timer = null;
 }
 
+// A failing action is acked as failed to Gladys, which shows it in the
+// scene log or as a toast; without this the integration logs would show
+// nothing, and a refused meter reading would be invisible.
+function logFailure(kind, key, run) {
+  return async (...args) => {
+    try {
+      return await run(...args);
+    } catch (err) {
+      logger.warn(`${kind} ${key} failed: ${err.message}`);
+      throw err;
+    }
+  };
+}
+
 // --- Discovery ---------------------------------------------------------------
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> publishing the devices');
@@ -87,29 +101,37 @@ gladys.onSetValue(async (device, feature, value) => {
 
 // --- Configuration screen actions --------------------------------------------
 for (const [key, handler] of Object.entries(CONFIG_ACTIONS)) {
-  gladys.onAction(key, async (fields) => {
-    const message = await handler({ fields, config, engine });
-    refreshWidgets(gladys);
-    return message;
-  });
+  gladys.onAction(
+    key,
+    logFailure('Action', key, async (fields) => {
+      const message = await handler({ fields, config, engine });
+      refreshWidgets(gladys);
+      return message;
+    }),
+  );
 }
 
 // --- Scene actions -----------------------------------------------------------
 // The scene TRIGGERS need no handler: the engine fires them with
 // publishSceneEvent.
 for (const [key, handler] of Object.entries(SCENE_ACTIONS)) {
-  gladys.onSceneAction(key, async (fields) => {
-    const outputs = await handler({ fields, config, engine });
-    refreshWidgets(gladys);
-    return outputs;
-  });
+  gladys.onSceneAction(
+    key,
+    logFailure('Scene action', key, async (fields) => {
+      const outputs = await handler({ fields, config, engine });
+      refreshWidgets(gladys);
+      return outputs;
+    }),
+  );
 }
 
 // --- Dashboard widgets -------------------------------------------------------
 for (const [key, widget] of Object.entries(WIDGETS)) {
   gladys.onWidgetGet(key, (request) => widget.get(gladys, { ...request, config, engine }));
   gladys.onWidgetAction(key, (actionKey, params, { settings, values }) =>
-    widget.action(gladys, { actionKey, params, settings, values, config, engine }),
+    logFailure(`Widget action ${key}.`, actionKey, () =>
+      widget.action(gladys, { actionKey, params, settings, values, config, engine }),
+    )(),
   );
 }
 

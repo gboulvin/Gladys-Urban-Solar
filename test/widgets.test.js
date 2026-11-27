@@ -133,3 +133,16 @@ test('the virtual battery widget shows the tariff of the Urban Solar contract', 
     assert.match(tariff.value.fr, expected);
   }
 });
+
+test('refreshing with the Gladys source explains where the readings come from', async () => {
+  const { gladys, engine } = await createTestEngine();
+  const toast = await WIDGETS[VIRTUAL_BATTERY_WIDGET].action(gladys, {
+    actionKey: 'refresh',
+    params: {},
+    settings: {},
+    config: GLADYS_CONFIG,
+    engine,
+  });
+  assert.match(toast.fr, /Enregistrer un relevé du compteur/);
+  assert.ok(toast.en.length <= 200);
+});
